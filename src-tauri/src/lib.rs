@@ -3,11 +3,13 @@ mod file_operations;
 mod frontmatter_parser;
 mod config_loader;
 mod mcp_server;
+mod css_generator;
 
 use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
 use config_loader::{load_config, SaddleConfig};
 use mcp_server::{get_available_tools, MCPTool};
+use css_generator::{generate_css_module, generate_global_css};
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -44,6 +46,20 @@ fn get_mcp_tools() -> Vec<MCPTool> {
     get_available_tools()
 }
 
+#[tauri::command]
+fn generate_css(component_name: String, variant_name: String, tokens_json: String) -> Result<String, String> {
+    let tokens: std::collections::HashMap<String, String> = serde_json::from_str(&tokens_json)
+        .map_err(|e| format!("Failed to parse tokens: {}", e))?;
+    Ok(generate_css_module(&component_name, &variant_name, &tokens))
+}
+
+#[tauri::command]
+fn generate_global_tokens_css(tokens_json: String) -> Result<String, String> {
+    let tokens: serde_json::Value = serde_json::from_str(&tokens_json)
+        .map_err(|e| format!("Failed to parse tokens: {}", e))?;
+    Ok(generate_global_css(&tokens))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -56,7 +72,9 @@ pub fn run() {
             parse_component_file,
             update_tokens,
             load_global_config,
-            get_mcp_tools
+            get_mcp_tools,
+            generate_css,
+            generate_global_tokens_css
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
