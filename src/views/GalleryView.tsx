@@ -3,7 +3,6 @@ import { open } from '@tauri-apps/plugin-dialog';
 import { Sidebar, type AppView } from '../components/Sidebar';
 import { ProjectSetupWizard } from '../components/ProjectSetupWizard';
 import { TerminalFeed, type LogEntry } from '../components/TerminalFeed';
-import { ResizablePanel } from '../components/ResizablePanel';
 import { EditorView } from './EditorView';
 import { ExportView } from './ExportView';
 import { HierarchyView } from './HierarchyView';
@@ -11,6 +10,48 @@ import { DashboardView } from './DashboardView';
 import { loadProject, loadGlobalConfig } from '../lib/tauri';
 import { loadTokensFromConfig } from '../tokens/tokens';
 import type { ProjectStructure, Component } from '../types/component';
+
+function VerticalDivider({ isOpen, onToggle, logCount }: { isOpen: boolean; onToggle: () => void; logCount: number }) {
+  return (
+    <div style={{
+      height: 28,
+      padding: '0 12px',
+      background: '#1d1d1f',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      flexShrink: 0,
+      borderTop: '1px solid #3a3a3c',
+    }}>
+      <button
+        onClick={onToggle}
+        style={{
+          background: 'transparent',
+          border: 'none',
+          color: '#98989d',
+          fontSize: 11,
+          cursor: 'pointer',
+          fontWeight: 500,
+          padding: '0 4px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+        }}
+      >
+        <span style={{
+          fontSize: 8,
+          transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+          transition: 'transform 100ms',
+          display: 'inline-block',
+        }}>▲</span>
+        Terminal
+      </button>
+      <span style={{ fontSize: 10, color: '#636366' }}>
+        {logCount > 0 ? `${logCount} entries` : ''}
+      </span>
+    </div>
+  );
+}
 
 export function GalleryView() {
   const [project, setProject] = useState<ProjectStructure | null>(null);
@@ -196,43 +237,19 @@ export function GalleryView() {
         </div>
 
         {/* Terminal Feed (bottom panel) */}
+        <VerticalDivider
+          isOpen={terminalOpen}
+          onToggle={() => setTerminalOpen(!terminalOpen)}
+          logCount={logs.length}
+        />
         {terminalOpen && (
-          <ResizablePanel defaultWidth={200} minWidth={120} maxWidth={400} side="left">
+          <div style={{ height: 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
             <TerminalFeed
               logs={logs}
               onCommand={(cmd) => addLog('ai', `> ${cmd}`, 'user')}
             />
-          </ResizablePanel>
+          </div>
         )}
-
-        {/* Terminal Toggle */}
-        <div style={{
-          height: 28,
-          padding: '0 12px',
-          background: '#1d1d1f',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexShrink: 0,
-        }}>
-          <button
-            onClick={() => setTerminalOpen(!terminalOpen)}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: '#98989d',
-              fontSize: 11,
-              cursor: 'pointer',
-              fontWeight: 500,
-              padding: '0 4px',
-            }}
-          >
-            {terminalOpen ? 'Hide Terminal' : 'Terminal'}
-          </button>
-          <span style={{ fontSize: 10, color: '#636366' }}>
-            {logs.length > 0 ? `${logs.length} entries` : 'No activity'}
-          </span>
-        </div>
       </div>
     </>
   );

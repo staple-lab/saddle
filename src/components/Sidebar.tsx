@@ -39,10 +39,8 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
             src={saddleLogo}
             alt="Saddle"
             style={{
-              width: 24,
               height: 24,
-              borderRadius: 6,
-              boxShadow: 'var(--elevation-1)',
+              objectFit: 'contain',
             }}
           />
           <div>
