@@ -1,14 +1,16 @@
-// src/views/GalleryView.tsx
 import { useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Sidebar } from '../components/Sidebar';
+import { Sidebar, type AppView } from '../components/Sidebar';
 import { ProjectSetupWizard } from '../components/ProjectSetupWizard';
+import { TerminalFeed, type LogEntry } from '../components/TerminalFeed';
+import { ResizablePanel } from '../components/ResizablePanel';
 import { EditorView } from './EditorView';
 import { ExportView } from './ExportView';
+import { HierarchyView } from './HierarchyView';
+import { DashboardView } from './DashboardView';
 import { loadProject, loadGlobalConfig } from '../lib/tauri';
 import { loadTokensFromConfig } from '../tokens/tokens';
 import type { ProjectStructure, Component } from '../types/component';
-import styles from '../styles/GalleryView.module.css';
 
 export function GalleryView() {
   const [project, setProject] = useState<ProjectStructure | null>(null);
@@ -17,61 +19,54 @@ export function GalleryView() {
   const [showWizard, setShowWizard] = useState(false);
   const [projectRoot, setProjectRoot] = useState<string>('');
   const [selectedComponent, setSelectedComponent] = useState<Component | null>(null);
-  const [view, setView] = useState<'components' | 'export'>('components');
+  const [view, setView] = useState<AppView>('components');
+  const [terminalOpen, setTerminalOpen] = useState(false);
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  const addLog = (type: LogEntry['type'], message: string, source?: string) => {
+    setLogs(prev => [...prev, { timestamp: new Date(), type, message, source }]);
+  };
 
   const handleLoadProject = async () => {
     try {
-      console.log('Opening file picker...');
       const selectedPath = await open({
         directory: true,
         multiple: false,
         title: 'Select Project Root Directory',
       });
 
-      console.log('Selected path:', selectedPath);
-
-      if (!selectedPath) {
-        console.log('No path selected');
-        return;
-      }
+      if (!selectedPath) return;
 
       setProjectRoot(selectedPath as string);
       setShowWizard(true);
-      console.log('Wizard should be visible now');
     } catch (err) {
-      console.error('Error opening file picker:', err);
       setError(err instanceof Error ? err.message : 'Failed to open file picker');
     }
   };
 
   const handleWizardComplete = async (componentPath: string, extensions: string[]) => {
     try {
-      console.log('=== handleWizardComplete ===');
-      console.log('Component path:', componentPath);
-      console.log('Extensions:', extensions);
-
       setLoading(true);
       setError(null);
       setShowWizard(false);
 
-      console.log('Loading project...');
-      const loadedProject = await loadProject(projectRoot, componentPath, extensions);
-      console.log('Project loaded:', loadedProject);
+      addLog('info', `Loading project from ${projectRoot}`, 'saddle');
 
-      // Load global tokens
+      const loadedProject = await loadProject(projectRoot, componentPath, extensions);
+
       try {
         const config = await loadGlobalConfig(projectRoot);
         loadTokensFromConfig(config.tokens);
-        console.log('✓ Global tokens loaded from saddle.config.json');
-      } catch (err) {
-        console.warn('No saddle.config.json found, using default tokens');
+        addLog('success', 'Global tokens loaded from saddle.config.json', 'tokens');
+      } catch {
+        addLog('warning', 'No saddle.config.json found, using defaults', 'tokens');
       }
 
       setProject(loadedProject);
-      console.log('State updated');
+      addLog('success', `Loaded ${loadedProject.components.length} components`, 'saddle');
     } catch (err) {
-      console.error('Error loading project:', err);
       setError(err instanceof Error ? err.message : 'Failed to load project');
+      addLog('error', `Failed: ${err}`, 'saddle');
       setShowWizard(false);
     } finally {
       setLoading(false);
@@ -83,31 +78,29 @@ export function GalleryView() {
     setProjectRoot('');
   };
 
+  // No project, no wizard - show landing
   if (!project && !loading && !showWizard) {
     return (
-      <div className={styles.container}>
-        <div className={styles.empty}>
-          <h2>No Project Loaded</h2>
-          <p>Select a component library to get started</p>
-          <button onClick={handleLoadProject} className={styles.button}>
-            Load Project
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ display: 'flex', flex: 1, height: '100%', width: '100%' }}>
+      <>
+        <Sidebar
+          project={null}
+          onSelectComponent={() => {}}
+          selectedComponent={null}
+          onLoadProject={handleLoadProject}
+          onConfigure={() => {}}
+          onExport={() => {}}
+          view="components"
+          onViewChange={() => {}}
+        />
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
           <div style={{ textAlign: 'center' }}>
-            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600, color: 'var(--color-danger)' }}>Error</h2>
-            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--color-fg-muted)' }}>{error}</p>
+            <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 600, color: 'var(--color-fg)' }}>Welcome to Saddle</h2>
+            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--color-fg-muted)' }}>Load a component library to get started</p>
             <button
               onClick={handleLoadProject}
               style={{
-                padding: '8px 16px',
+                height: 34,
+                padding: '0 20px',
                 background: 'var(--color-primary)',
                 color: '#ffffff',
                 border: 'none',
@@ -118,9 +111,26 @@ export function GalleryView() {
                 boxShadow: 'var(--elevation-1)',
               }}
             >
-              Try Again
+              Load Project
             </button>
           </div>
+        </div>
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: 'var(--color-danger)' }}>Error</h2>
+          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--color-fg-muted)' }}>{error}</p>
+          <button
+            onClick={handleLoadProject}
+            style={{ height: 34, padding: '0 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
@@ -128,13 +138,34 @@ export function GalleryView() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', flex: 1, height: '100%', width: '100%' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
-          <p style={{ fontSize: 13, color: 'var(--color-fg-muted)' }}>Loading project...</p>
-        </div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+        <p style={{ fontSize: 13, color: 'var(--color-fg-muted)' }}>Loading project...</p>
       </div>
     );
   }
+
+  const renderMainContent = () => {
+    if (view === 'export' && project) {
+      return <ExportView project={project} onBack={() => setView('components')} />;
+    }
+    if (view === 'hierarchy' && project) {
+      return <HierarchyView project={project} onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }} />;
+    }
+    if (view === 'dashboard' && project) {
+      return <DashboardView project={project} projectRoot={projectRoot} />;
+    }
+    if (selectedComponent) {
+      return <EditorView component={selectedComponent} onBack={() => setSelectedComponent(null)} />;
+    }
+    return (
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+        <div style={{ textAlign: 'center' }}>
+          <h2 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: 'var(--color-fg)' }}>Select a Component</h2>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--color-fg-muted)' }}>Choose from the sidebar to view and edit</p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -154,47 +185,55 @@ export function GalleryView() {
         selectedComponent={selectedComponent}
         onLoadProject={handleLoadProject}
         onConfigure={() => setShowWizard(true)}
-        onExport={() => {
-          setView('export');
-          setSelectedComponent(null);
-        }}
+        onExport={() => { setView('export'); setSelectedComponent(null); }}
         view={view}
+        onViewChange={(v) => { setView(v); if (v !== 'components') setSelectedComponent(null); }}
       />
-      {view === 'export' && project ? (
-        <ExportView
-          project={project}
-          onBack={() => setView('components')}
-        />
-      ) : selectedComponent ? (
-        <EditorView
-          component={selectedComponent}
-          onBack={() => setSelectedComponent(null)}
-        />
-      ) : (
-        <div className={styles.emptyStage}>
-          <div className={styles.emptyContent}>
-            {!project ? (
-              <>
-                <h2>No Project Loaded</h2>
-                <p>Select a component library to get started</p>
-                <button onClick={handleLoadProject} className={styles.button}>
-                  Load Project
-                </button>
-              </>
-            ) : (
-              <>
-                <h2>Select a Component</h2>
-                <p>Choose a component from the sidebar to view and edit</p>
-                {project && (
-                  <button onClick={() => { setShowWizard(true); }} className={styles.settingsButton}>
-                    Configure Project
-                  </button>
-                )}
-              </>
-            )}
-          </div>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+        {/* Main Content */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+          {renderMainContent()}
         </div>
-      )}
+
+        {/* Terminal Feed (bottom panel) */}
+        {terminalOpen && (
+          <ResizablePanel defaultWidth={200} minWidth={120} maxWidth={400} side="left">
+            <TerminalFeed
+              logs={logs}
+              onCommand={(cmd) => addLog('ai', `> ${cmd}`, 'user')}
+            />
+          </ResizablePanel>
+        )}
+
+        {/* Terminal Toggle */}
+        <div style={{
+          height: 28,
+          padding: '0 12px',
+          background: '#1d1d1f',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexShrink: 0,
+        }}>
+          <button
+            onClick={() => setTerminalOpen(!terminalOpen)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#98989d',
+              fontSize: 11,
+              cursor: 'pointer',
+              fontWeight: 500,
+              padding: '0 4px',
+            }}
+          >
+            {terminalOpen ? 'Hide Terminal' : 'Terminal'}
+          </button>
+          <span style={{ fontSize: 10, color: '#636366' }}>
+            {logs.length > 0 ? `${logs.length} entries` : 'No activity'}
+          </span>
+        </div>
+      </div>
     </>
   );
 }

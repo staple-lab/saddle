@@ -1,4 +1,8 @@
+import { useState } from 'react';
 import type { ProjectStructure, Component } from '../types/component';
+import { SearchBar } from './SearchBar';
+
+export type AppView = 'components' | 'hierarchy' | 'dashboard' | 'export';
 
 interface SidebarProps {
   project: ProjectStructure | null;
@@ -7,10 +11,17 @@ interface SidebarProps {
   onLoadProject: () => void;
   onConfigure: () => void;
   onExport: () => void;
-  view: 'components' | 'export';
+  view: AppView;
+  onViewChange: (view: AppView) => void;
 }
 
-export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadProject, onConfigure, onExport, view }: SidebarProps) {
+export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadProject, onConfigure, onExport, view, onViewChange }: SidebarProps) {
+  const [search, setSearch] = useState('');
+
+  const filteredComponents = project?.components.filter(c =>
+    c.name.toLowerCase().includes(search.toLowerCase())
+  ) || [];
+
   return (
     <aside style={{
       width: 260,
@@ -49,30 +60,32 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
             </div>
           </div>
         ) : (
-          <Section label="Components">
-            {project.components.length === 0 ? (
-              <div style={{ padding: '4px', fontSize: 13, color: 'var(--color-fg-subtle)', fontStyle: 'italic' }}>
-                No components found
-              </div>
-            ) : (
-              project.components.map((component, idx) => (
-                <NavItem
-                  key={idx}
-                  label={component.name}
-                  subtitle={`${component.variants.length} variant${component.variants.length !== 1 ? 's' : ''}`}
-                  active={selectedComponent?.name === component.name}
-                  onClick={() => onSelectComponent(component)}
-                />
-              ))
-            )}
-          </Section>
-        )}
-
-        {project && (
           <>
-            <Section label="Project">
-              <NavItem label="Configure" active={false} onClick={onConfigure} />
+            <SearchBar value={search} onChange={setSearch} placeholder="Filter components..." />
+
+            <Section label="Components">
+              {filteredComponents.length === 0 ? (
+                <div style={{ padding: '4px', fontSize: 13, color: 'var(--color-fg-subtle)', fontStyle: 'italic' }}>
+                  {search ? 'No matches' : 'No components found'}
+                </div>
+              ) : (
+                filteredComponents.map((component, idx) => (
+                  <NavItem
+                    key={idx}
+                    label={component.name}
+                    subtitle={`${component.variants.length} variant${component.variants.length !== 1 ? 's' : ''}`}
+                    active={view === 'components' && selectedComponent?.name === component.name}
+                    onClick={() => { onSelectComponent(component); onViewChange('components'); }}
+                  />
+                ))
+              )}
             </Section>
+
+            <Section label="Views">
+              <NavItem label="Hierarchy" active={view === 'hierarchy'} onClick={() => onViewChange('hierarchy')} />
+              <NavItem label="Dashboard" active={view === 'dashboard'} onClick={() => onViewChange('dashboard')} />
+            </Section>
+
             <Section label="Ship">
               <NavItem label="Export" active={view === 'export'} onClick={onExport} />
             </Section>
