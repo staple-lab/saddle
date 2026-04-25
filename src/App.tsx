@@ -1,11 +1,11 @@
 // src/App.tsx
+import { GalleryView } from './views/GalleryView';
 import './App.css';
 
 function App() {
   return (
     <div className="app">
-      <h1>Saddle</h1>
-      <p>Component Builder with AI Design Integration</p>
+      <GalleryView />
     </div>
   );
 }
