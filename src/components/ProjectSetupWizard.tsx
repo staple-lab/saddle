@@ -110,13 +110,34 @@ export function ProjectSetupWizard({ projectRoot, onComplete, onCancel }: Projec
           )}
 
           {(selectedPath === 'custom' || detectedPaths.length === 0) && (
-            <input
-              type="text"
-              className={styles.input}
-              placeholder="src/components"
-              value={customPath}
-              onChange={(e) => setCustomPath(e.target.value)}
-            />
+            <div className={styles.customPathInput}>
+              <input
+                type="text"
+                className={styles.input}
+                placeholder="src/components"
+                value={customPath}
+                onChange={(e) => setCustomPath(e.target.value)}
+              />
+              <button
+                type="button"
+                className={styles.browseButton}
+                onClick={async () => {
+                  const { open } = await import('@tauri-apps/plugin-dialog');
+                  const selected = await open({
+                    directory: true,
+                    multiple: false,
+                    title: 'Select Component Directory',
+                    defaultPath: projectRoot,
+                  });
+                  if (selected) {
+                    const relativePath = (selected as string).replace(projectRoot, '').replace(/^[\/\\]/, '');
+                    setCustomPath(relativePath);
+                  }
+                }}
+              >
+                Browse...
+              </button>
+            </div>
           )}
         </div>
 
