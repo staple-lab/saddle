@@ -4,6 +4,7 @@ import { CodeEditor } from '../components/CodeEditor';
 import { StyleEditor } from '../components/StyleEditor';
 import { ComponentPreview } from '../components/ComponentPreview';
 import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
+import { ResizablePanel } from '../components/ResizablePanel';
 import { updateTokens } from '../lib/tauri';
 
 interface EditorViewProps {
@@ -92,18 +93,11 @@ export function EditorView({ component, onBack }: EditorViewProps) {
         </div>
       </main>
 
-      {/* Right Panel - Inspector */}
-      <aside style={{
-        width: 320,
-        flexShrink: 0,
-        height: '100%',
-        background: '#ffffff',
-        borderLeft: '1px solid var(--color-border)',
-        display: 'flex',
-        flexDirection: 'column',
-      }}>
+      {/* Right Panel - Inspector (resizable) */}
+      <ResizablePanel defaultWidth={320} minWidth={240} maxWidth={520} side="right">
         {/* Tabs */}
         <header style={{
+          background: '#ffffff',
           padding: '0 16px',
           borderBottom: '1px solid var(--color-border)',
           flexShrink: 0,
@@ -191,7 +185,7 @@ export function EditorView({ component, onBack }: EditorViewProps) {
             </div>
           )}
         </div>
-      </aside>
+      </ResizablePanel>
     </div>
   );
 }
