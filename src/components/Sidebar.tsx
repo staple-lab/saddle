@@ -28,25 +28,25 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
       }}
     >
       {/* Header */}
-      <header style={{ padding: '14px 14px 6px', flexShrink: 0 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 4px 4px' }}>
+      <header style={{ padding: '12px', flexShrink: 0, borderBottom: '1px solid var(--color-border)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div
             style={{
-              width: 22,
-              height: 22,
-              borderRadius: 6,
-              background: 'linear-gradient(135deg, #0a84ff, #5e5ce6)',
+              width: 20,
+              height: 20,
+              borderRadius: 4,
+              background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
               boxShadow: 'var(--elevation-1)',
             }}
           />
-          <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.02em' }}>
+          <div style={{ fontSize: 13, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--color-fg)' }}>
             {project ? 'Components' : 'Saddle'}
           </div>
         </div>
       </header>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '6px 10px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '8px', display: 'flex', flexDirection: 'column', gap: 12 }}>
         {!project ? (
           <div style={{ padding: '20px 10px', textAlign: 'center' }}>
             <div style={{ fontSize: 12, color: 'var(--color-fg-muted)', marginBottom: 14, lineHeight: 1.5 }}>
@@ -97,29 +97,27 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
       </nav>
 
       {/* Footer */}
-      <footer style={{ padding: 10, borderTop: '1px solid var(--color-border)', flexShrink: 0 }}>
+      <footer style={{ padding: 8, borderTop: '1px solid var(--color-border)', flexShrink: 0 }}>
         <button
           onClick={onLoadProject}
           style={{
             width: '100%',
-            padding: '8px 12px',
+            padding: '6px 12px',
             background: project ? 'transparent' : 'var(--color-primary)',
-            color: project ? 'var(--color-primary)' : '#ffffff',
+            color: project ? 'var(--color-fg)' : '#ffffff',
             border: project ? '1px solid var(--color-border)' : 'none',
-            borderRadius: 8,
-            fontSize: 13,
+            borderRadius: 6,
+            fontSize: 12,
             fontWeight: 500,
             cursor: 'pointer',
             boxShadow: project ? 'none' : 'var(--elevation-1)',
-            transition: 'all 120ms ease',
+            transition: 'all 100ms ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = project ? 'var(--color-surface)' : 'var(--color-primary-press)';
-            if (project) e.currentTarget.style.borderColor = 'var(--color-primary)';
+            e.currentTarget.style.background = project ? 'rgba(0, 0, 0, 0.04)' : 'var(--color-primary-press)';
           }}
           onMouseLeave={(e) => {
             e.currentTarget.style.background = project ? 'transparent' : 'var(--color-primary)';
-            if (project) e.currentTarget.style.borderColor = 'var(--color-border)';
           }}
         >
           {project ? 'Load Different Project' : '+ Load Project'}
@@ -131,14 +129,14 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
 
 function Section({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <div
         style={{
-          padding: '4px 10px 4px',
+          padding: '0 8px 4px',
           fontSize: 10,
           color: 'var(--color-fg-subtle)',
           textTransform: 'uppercase',
-          letterSpacing: '0.06em',
+          letterSpacing: '0.08em',
           fontWeight: 600,
         }}
       >
@@ -168,36 +166,36 @@ function NavItem({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
+        gap: 6,
         width: '100%',
-        padding: '6px 10px',
-        background: active ? 'rgba(10, 132, 255, 0.12)' : 'transparent',
+        padding: '4px 8px',
+        background: active ? 'rgba(139, 92, 246, 0.08)' : 'transparent',
         border: 'none',
-        borderRadius: 6,
+        borderRadius: 4,
         cursor: 'pointer',
         textAlign: 'left',
-        transition: 'background 120ms ease',
+        transition: 'background 100ms ease',
         color: active ? 'var(--color-primary)' : 'var(--color-fg)',
-        fontWeight: active ? 600 : 500,
+        fontWeight: active ? 600 : 400,
       }}
       onMouseEnter={(e) => {
-        if (!active) e.currentTarget.style.background = 'var(--color-surface)';
+        if (!active) e.currentTarget.style.background = 'rgba(0, 0, 0, 0.04)';
       }}
       onMouseLeave={(e) => {
         if (!active) e.currentTarget.style.background = 'transparent';
       }}
     >
       {icon && (
-        <span style={{ fontSize: 14, lineHeight: 1, opacity: 0.7 }}>
+        <span style={{ fontSize: 12, lineHeight: 1, opacity: 0.6 }}>
           {icon}
         </span>
       )}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13, letterSpacing: '-0.01em' }}>
+        <div style={{ fontSize: 12, letterSpacing: '-0.003em' }}>
           {label}
         </div>
         {subtitle && (
-          <div style={{ fontSize: 11, color: active ? 'var(--color-primary)' : 'var(--color-fg-muted)', opacity: active ? 0.8 : 1, marginTop: 1 }}>
+          <div style={{ fontSize: 10, color: active ? 'var(--color-primary)' : 'var(--color-fg-subtle)', opacity: active ? 0.7 : 1, marginTop: 1 }}>
             {subtitle}
           </div>
         )}

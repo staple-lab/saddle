@@ -99,13 +99,28 @@ export function GalleryView() {
 
   if (error) {
     return (
-      <div className={styles.container}>
-        <div className={styles.empty}>
-          <h2>Error</h2>
-          <p className={styles.errorText}>{error}</p>
-          <button onClick={handleLoadProject} className={styles.button}>
-            Try Again
-          </button>
+      <div style={{ display: 'flex', flex: 1, height: '100%', width: '100%' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 22, fontWeight: 600, color: 'var(--color-danger)' }}>Error</h2>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--color-fg-muted)' }}>{error}</p>
+            <button
+              onClick={handleLoadProject}
+              style={{
+                padding: '8px 16px',
+                background: 'var(--color-primary)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 8,
+                fontSize: 13,
+                fontWeight: 500,
+                cursor: 'pointer',
+                boxShadow: 'var(--elevation-1)',
+              }}
+            >
+              Try Again
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -113,9 +128,9 @@ export function GalleryView() {
 
   if (loading) {
     return (
-      <div className={styles.container}>
-        <div className={styles.empty}>
-          <p>Loading project...</p>
+      <div style={{ display: 'flex', flex: 1, height: '100%', width: '100%' }}>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+          <p style={{ fontSize: 13, color: 'var(--color-fg-muted)' }}>Loading project...</p>
         </div>
       </div>
     );
