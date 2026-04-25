@@ -187,7 +187,7 @@ export function GalleryView() {
 
   const renderMainContent = () => {
     if (view === 'export' && project) {
-      return <ExportView project={project} onBack={() => setView('components')} />;
+      return <ExportView project={project} projectRoot={projectRoot} onBack={() => setView('components')} />;
     }
     if (view === 'hierarchy' && project) {
       return <HierarchyView project={project} projectRoot={projectRoot} onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }} />;

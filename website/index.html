@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saddle - Component Builder with AI Design Integration</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="/assets/saddle-logo.png">
+</head>
+<body>
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <img src="assets/saddle-logo.png" alt="Saddle" height="28">
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#download">Download</a>
+        <a href="https://github.com/timojarvinen/saddle" class="nav-github">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-inner">
+      <div class="hero-badge">Now in Beta</div>
+      <h1>Build component libraries<br>that AI understands</h1>
+      <p class="hero-sub">Saddle is a desktop app for building production-ready React component libraries with token-first design, live editing, and bidirectional Claude Code integration.</p>
+      <div class="hero-actions">
+        <a href="#download" class="btn btn-primary">Download for Mac</a>
+        <a href="https://github.com/timojarvinen/saddle" class="btn btn-secondary">View on GitHub</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="features" class="features">
+    <div class="section-inner">
+      <h2>Everything you need</h2>
+      <p class="section-sub">Professional component authoring that generates AI-friendly, production-ready output.</p>
+
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="feature-icon">T</div>
+          <h3>Token-First Design</h3>
+          <p>Edit via tokens only. Saddle enforces consistency across your design system and auto-suggests tokenization for raw values.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">AI</div>
+          <h3>AI-Readable Components</h3>
+          <p>design.md frontmatter gives AI explicit metadata: when to use components, constraints, and best practices.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">MCP</div>
+          <h3>Claude Code Integration</h3>
+          <p>Bidirectional MCP server lets Claude Code read, modify, and create components directly through Saddle.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">HMR</div>
+          <h3>Live Dev Server</h3>
+          <p>Connect to your running dev server. Edit tokens in Saddle, see changes instantly via HMR.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">CSS</div>
+          <h3>CSS Module Generation</h3>
+          <p>Tokens automatically generate CSS Modules with CSS variables. Zero manual CSS writing.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">npm</div>
+          <h3>npm Package Export</h3>
+          <p>One-click export as publishable npm package with conditional exports for dev and production.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works -->
+  <section id="how-it-works" class="how-it-works">
+    <div class="section-inner">
+      <h2>How it works</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <h3>Load your project</h3>
+          <p>Point Saddle at any React component library. It scans for components and parses design.md frontmatter automatically.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <h3>Edit with tokens</h3>
+          <p>Visual style editor with token pickers for colors, spacing, radii, and typography. All changes save back to your files.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <h3>Connect Claude Code</h3>
+          <p>Add Saddle's MCP server to Claude Code. Now AI can read your component schemas and make changes that appear in Saddle instantly.</p>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <h3>Export and ship</h3>
+          <p>Build an npm package with conditional exports, generated CSS Modules, TypeScript types, and clean production code.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="tech-stack">
+    <div class="section-inner">
+      <h2>Built with</h2>
+      <div class="tech-grid">
+        <div class="tech-item">Tauri 2.x</div>
+        <div class="tech-item">React 18</div>
+        <div class="tech-item">TypeScript</div>
+        <div class="tech-item">Rust</div>
+        <div class="tech-item">Monaco Editor</div>
+        <div class="tech-item">MCP Protocol</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Download -->
+  <section id="download" class="download">
+    <div class="section-inner">
+      <h2>Get Saddle</h2>
+      <p class="section-sub">Free and open source. Apache 2.0 license.</p>
+      <div class="download-actions">
+        <a href="https://github.com/timojarvinen/saddle/releases" class="btn btn-primary btn-lg">Download for macOS</a>
+        <a href="https://github.com/timojarvinen/saddle" class="btn btn-secondary btn-lg">Build from Source</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="section-inner">
+      <p>Saddle is open source. Apache-2.0 License.</p>
+      <a href="https://github.com/timojarvinen/saddle">GitHub</a>
+    </div>
+  </footer>
+</body>
+</html>

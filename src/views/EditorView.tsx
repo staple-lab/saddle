@@ -5,7 +5,7 @@ import { StyleEditor } from '../components/StyleEditor';
 import { ComponentPreview } from '../components/ComponentPreview';
 import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { ResizablePanel } from '../components/ResizablePanel';
-import { updateTokens } from '../lib/tauri';
+import { updateTokens, createVariant } from '../lib/tauri';
 
 interface EditorViewProps {
   component: Component;
@@ -93,9 +93,27 @@ export function EditorView({ component, onBack }: EditorViewProps) {
               </button>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>
-            {component.name}
-          </div>
+          <button
+            onClick={async () => {
+              const name = prompt('Variant name (e.g. Ghost, Outlined):');
+              if (!name) return;
+              try {
+                await createVariant(component.directory, component.name, name);
+                alert(`Created ${component.name}.${name}.tsx - reload project to see it`);
+              } catch (err) {
+                alert(`Failed: ${err}`);
+              }
+            }}
+            style={{
+              height: 28, padding: '0 10px',
+              background: '#ffffff', color: 'var(--color-fg)',
+              border: '1px solid var(--color-border)', borderRadius: 6,
+              fontSize: 12, fontWeight: 500, cursor: 'pointer',
+              boxShadow: 'var(--elevation-1)',
+            }}
+          >
+            + New Variant
+          </button>
         </div>
 
         {/* Preview */}

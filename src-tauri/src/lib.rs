@@ -4,12 +4,14 @@ mod frontmatter_parser;
 mod config_loader;
 mod mcp_server;
 mod css_generator;
+mod dedup_analyzer;
 
 use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
 use config_loader::{load_config, SaddleConfig};
 use mcp_server::{get_available_tools, MCPTool, create_variant_file};
 use css_generator::{generate_css_module, generate_global_css};
+use dedup_analyzer::{analyze_token_duplication, analyze_structure_duplication, DuplicateToken, StructureDuplicate};
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -88,6 +90,109 @@ fn write_component_file(file_path: String, content: String) -> Result<(), String
     file_operations::write_file(&file_path, &content)
 }
 
+#[tauri::command]
+fn analyze_duplicates(components_json: String) -> Result<Vec<DuplicateToken>, String> {
+    analyze_token_duplication(&components_json)
+}
+
+#[tauri::command]
+fn analyze_structure(components_json: String) -> Result<Vec<StructureDuplicate>, String> {
+    analyze_structure_duplication(&components_json)
+}
+
+#[tauri::command]
+fn build_package(
+    project_root: String,
+    package_name: String,
+    components_json: String,
+) -> Result<String, String> {
+    use std::fs;
+    use std::path::Path;
+
+    let dist_path = Path::new(&project_root).join("dist");
+    fs::create_dir_all(&dist_path).map_err(|e| format!("Failed to create dist: {}", e))?;
+
+    // Parse components
+    let components: Vec<serde_json::Value> = serde_json::from_str(&components_json)
+        .map_err(|e| format!("Failed to parse: {}", e))?;
+
+    // Generate index.ts
+    let mut index_exports = Vec::new();
+    let mut css_content = String::new();
+
+    for component in &components {
+        let name = component["name"].as_str().unwrap_or("Component");
+        if let Some(variants) = component["variants"].as_array() {
+            for variant in variants {
+                let var_name = variant["variantName"].as_str().unwrap_or("Default");
+                let code = variant["code"].as_str().unwrap_or("");
+                let file_name = format!("{}.{}.tsx", name, var_name);
+
+                // Write component file (stripped of frontmatter)
+                let comp_path = dist_path.join(&file_name);
+                fs::write(&comp_path, code).map_err(|e| format!("Write failed: {}", e))?;
+
+                index_exports.push(format!("export {{ {} }} from './{}.{}';", format!("{}{}", name, var_name), name, var_name));
+
+                // Generate CSS from tokens
+                if let Some(tokens) = variant["frontmatter"]["tokens"].as_object() {
+                    let token_map: std::collections::HashMap<String, String> = tokens
+                        .iter()
+                        .filter_map(|(k, v)| v.as_str().map(|vs| (k.clone(), vs.to_string())))
+                        .collect();
+                    let css = generate_css_module(name, var_name, &token_map);
+                    let css_file = format!("{}.{}.module.css", name, var_name);
+                    fs::write(dist_path.join(&css_file), &css)
+                        .map_err(|e| format!("CSS write failed: {}", e))?;
+                }
+            }
+        }
+    }
+
+    // Write index.ts
+    let index_content = index_exports.join("\n") + "\n";
+    fs::write(dist_path.join("index.ts"), &index_content)
+        .map_err(|e| format!("Index write failed: {}", e))?;
+
+    // Generate global CSS
+    let config_path = Path::new(&project_root).join("saddle.config.json");
+    if config_path.exists() {
+        let config_str = fs::read_to_string(&config_path)
+            .map_err(|e| format!("Config read failed: {}", e))?;
+        let config: serde_json::Value = serde_json::from_str(&config_str)
+            .map_err(|e| format!("Config parse failed: {}", e))?;
+        if let Some(tokens) = config.get("tokens") {
+            let global_css = generate_global_css(tokens);
+            fs::write(dist_path.join("tokens.css"), &global_css)
+                .map_err(|e| format!("CSS write failed: {}", e))?;
+        }
+    }
+
+    // Generate package.json
+    let pkg_json = serde_json::json!({
+        "name": package_name,
+        "version": "0.1.0",
+        "type": "module",
+        "main": "./index.ts",
+        "exports": {
+            ".": {
+                "development": "./index.ts",
+                "default": "./index.ts"
+            },
+            "./tokens.css": "./tokens.css"
+        },
+        "peerDependencies": {
+            "react": ">=18"
+        }
+    });
+    fs::write(
+        dist_path.join("package.json"),
+        serde_json::to_string_pretty(&pkg_json).unwrap(),
+    ).map_err(|e| format!("Package.json write failed: {}", e))?;
+
+    Ok(dist_path.to_string_lossy().to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -104,7 +209,10 @@ pub fn run() {
             generate_css,
             generate_global_tokens_css,
             create_variant,
-            write_component_file
+            write_component_file,
+            analyze_duplicates,
+            analyze_structure,
+            build_package
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

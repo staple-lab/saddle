@@ -73,6 +73,31 @@ export async function writeDesignDoc(projectRoot: string, content: string): Prom
   return invoke<void>('write_component_file', { filePath: `${projectRoot}/design.md`, content });
 }
 
+export interface DuplicateToken {
+  value: string;
+  property: string;
+  occurrences: { component_name: string; variant_name: string; file_path: string }[];
+  suggested_token_name: string;
+}
+
+export interface StructureDuplicate {
+  pattern: string;
+  occurrences: string[];
+  suggestion: string;
+}
+
+export async function analyzeDuplicates(componentsJson: string): Promise<DuplicateToken[]> {
+  return invoke<DuplicateToken[]>('analyze_duplicates', { componentsJson });
+}
+
+export async function analyzeStructure(componentsJson: string): Promise<StructureDuplicate[]> {
+  return invoke<StructureDuplicate[]>('analyze_structure', { componentsJson });
+}
+
+export async function buildPackage(projectRoot: string, packageName: string, componentsJson: string): Promise<string> {
+  return invoke<string>('build_package', { projectRoot, packageName, componentsJson });
+}
+
 export async function loadProject(
   rootPath: string,
   componentPath: string = 'src/components',
