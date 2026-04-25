@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ProjectStructure, Component } from '../types/component';
 import { SearchBar } from './SearchBar';
+import saddleLogo from '/saddle-logo.png?url';
 
 export type AppView = 'components' | 'hierarchy' | 'dashboard' | 'export';
 
@@ -35,7 +36,7 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
       <header style={{ padding: '16px', flexShrink: 0, borderBottom: '1px solid var(--color-border)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <img
-            src="/saddle-logo.png"
+            src={saddleLogo}
             alt="Saddle"
             style={{
               width: 24,
