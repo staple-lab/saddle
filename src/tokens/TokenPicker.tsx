@@ -44,7 +44,6 @@ export function TokenPicker({ slot, value, onPick }: Props) {
           whiteSpace: 'nowrap',
         }}
       >
-        <span>◆</span>
         {currentToken ? currentToken.name : 'token'}
       </button>
       {open && (
