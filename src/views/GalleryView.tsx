@@ -97,6 +97,8 @@ export function GalleryView() {
     );
   }
 
+  console.log('Render - showWizard:', showWizard, 'projectRoot:', projectRoot);
+
   return (
     <>
       {showWizard && (
@@ -106,6 +108,7 @@ export function GalleryView() {
           onCancel={handleWizardCancel}
         />
       )}
+      {showWizard && <div style={{ position: 'fixed', top: 0, left: 0, background: 'red', color: 'white', padding: '10px', zIndex: 9999 }}>WIZARD SHOULD BE HERE</div>}
       <div className={styles.container}>
         <header className={styles.header}>
           <h1>Component Gallery</h1>
