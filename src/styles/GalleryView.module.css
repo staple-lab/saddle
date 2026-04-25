@@ -13,6 +13,12 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.headerContent {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .header h1 {
   margin: 0 0 4px 0;
   font-size: 24px;
@@ -25,6 +31,24 @@
   font-size: var(--font-size-small);
   color: var(--color-subtext);
   font-weight: 500;
+}
+
+.settingsButton {
+  padding: 8px 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: var(--border-radius);
+  font-family: var(--font-body);
+  font-size: var(--font-size-base);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.settingsButton:hover {
+  background: var(--color-overlay);
+  border-color: var(--color-accent);
 }
 
 .grid {
