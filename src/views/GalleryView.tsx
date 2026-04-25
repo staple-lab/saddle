@@ -16,19 +16,25 @@ export function GalleryView() {
 
   const handleLoadProject = async () => {
     try {
+      console.log('Opening file picker...');
       const selectedPath = await open({
         directory: true,
         multiple: false,
         title: 'Select Project Root Directory',
       });
 
+      console.log('Selected path:', selectedPath);
+
       if (!selectedPath) {
+        console.log('No path selected');
         return;
       }
 
       setProjectRoot(selectedPath as string);
       setShowWizard(true);
+      console.log('Wizard should be visible now');
     } catch (err) {
+      console.error('Error opening file picker:', err);
       setError(err instanceof Error ? err.message : 'Failed to open file picker');
     }
   };
