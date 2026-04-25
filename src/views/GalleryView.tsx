@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { ComponentCard } from '../components/ComponentCard';
 import { ProjectSetupWizard } from '../components/ProjectSetupWizard';
+import { EditorView } from './EditorView';
 import { loadProject } from '../lib/tauri';
 import type { ProjectStructure, Component } from '../types/component';
 import styles from '../styles/GalleryView.module.css';
@@ -105,6 +106,16 @@ export function GalleryView() {
           <p>Loading project...</p>
         </div>
       </div>
+    );
+  }
+
+  // If a component is selected, show the editor view
+  if (selectedComponent) {
+    return (
+      <EditorView
+        component={selectedComponent}
+        onBack={() => setSelectedComponent(null)}
+      />
     );
   }
 
