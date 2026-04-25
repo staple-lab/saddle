@@ -29,6 +29,7 @@ fn parse_component_file(content: String) -> Result<ParsedFile, String> {
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             greet,
             scan_project_directory,

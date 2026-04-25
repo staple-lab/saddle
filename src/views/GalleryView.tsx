@@ -1,5 +1,6 @@
 // src/views/GalleryView.tsx
 import { useState } from 'react';
+import { open } from '@tauri-apps/plugin-dialog';
 import { ComponentCard } from '../components/ComponentCard';
 import { loadProject } from '../lib/tauri';
 import type { ProjectStructure } from '../types/component';
@@ -14,10 +15,19 @@ export function GalleryView() {
     try {
       setLoading(true);
       setError(null);
-      // For demo, use a placeholder path
-      // In production, this would come from file picker dialog
-      const projectPath = '/path/to/test-component-lib';
-      const loadedProject = await loadProject(projectPath);
+
+      const selectedPath = await open({
+        directory: true,
+        multiple: false,
+        title: 'Select Component Library Root Directory',
+      });
+
+      if (!selectedPath) {
+        setLoading(false);
+        return;
+      }
+
+      const loadedProject = await loadProject(selectedPath as string);
       setProject(loadedProject);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load project');
