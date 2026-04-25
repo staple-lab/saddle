@@ -3,6 +3,7 @@ import type { Component } from '../types/component';
 import { CodeEditor } from '../components/CodeEditor';
 import { StyleEditor } from '../components/StyleEditor';
 import { ComponentPreview } from '../components/ComponentPreview';
+import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { updateTokens } from '../lib/tauri';
 
 interface EditorViewProps {
@@ -10,11 +11,12 @@ interface EditorViewProps {
   onBack: () => void;
 }
 
-type Tab = 'style' | 'code' | 'metadata';
+type Tab = 'style' | 'code' | 'ai' | 'metadata';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'style', label: 'Style' },
   { id: 'code', label: 'Code' },
+  { id: 'ai', label: 'AI' },
   { id: 'metadata', label: 'Metadata' },
 ];
 
@@ -190,6 +192,16 @@ export function EditorView({ component, onBack }: EditorViewProps) {
                 />
               </div>
             </div>
+          )}
+
+          {tab === 'ai' && (
+            <AIGuidanceEditor
+              frontmatter={selectedVariant.frontmatter || {}}
+              onUpdate={(field, value) => {
+                console.log(`AI guidance updated: ${field} = ${value}`);
+                // TODO: Save to frontmatter
+              }}
+            />
           )}
 
           {tab === 'metadata' && selectedVariant.frontmatter && (
