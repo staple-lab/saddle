@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import type { Component } from '../types/component';
 import { CodeEditor } from '../components/CodeEditor';
 import { StyleEditor } from '../components/StyleEditor';
+import { ComponentPreview } from '../components/ComponentPreview';
 import { updateTokens } from '../lib/tauri';
 
 interface EditorViewProps {
@@ -112,9 +113,12 @@ export function EditorView({ component, onBack }: EditorViewProps) {
         )}
 
         {/* Preview Area */}
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 28 }}>
-          <div style={{ fontSize: 12, color: 'var(--color-fg-subtle)', fontStyle: 'italic' }}>
-            Live preview coming soon
+        <div style={{ flex: 1, padding: 28, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ maxWidth: 800, width: '100%', height: '100%', minHeight: 400 }}>
+            <ComponentPreview
+              code={selectedVariant.code}
+              frontmatter={selectedVariant.frontmatter}
+            />
           </div>
         </div>
       </main>
