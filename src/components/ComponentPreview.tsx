@@ -3,10 +3,11 @@ import { useMemo } from 'react';
 interface ComponentPreviewProps {
   code: string;
   frontmatter?: any;
+  liveTokens?: Record<string, string>;
 }
 
-export function ComponentPreview({ code, frontmatter }: ComponentPreviewProps) {
-  const tokens = frontmatter?.tokens || {};
+export function ComponentPreview({ code, frontmatter, liveTokens }: ComponentPreviewProps) {
+  const tokens = liveTokens || frontmatter?.tokens || {};
 
   // Build inline style string from tokens
   const tokenStyles = Object.entries(tokens)

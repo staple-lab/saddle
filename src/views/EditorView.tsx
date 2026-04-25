@@ -103,6 +103,7 @@ export function EditorView({ component, onBack }: EditorViewProps) {
           <ComponentPreview
             code={selectedVariant.code}
             frontmatter={selectedVariant.frontmatter}
+            liveTokens={localTokens}
           />
         </div>
       </main>
