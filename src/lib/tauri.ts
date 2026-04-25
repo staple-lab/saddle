@@ -29,23 +29,36 @@ export async function loadProject(
   componentPath: string = 'src/components',
   extensions: string[] = ['.tsx', '.jsx']
 ): Promise<ProjectStructure> {
-  const fullComponentPath = `${rootPath}/${componentPath}`.replace(/\/+/g, '/');
+  // Normalize paths
+  const normalizedRoot = rootPath.replace(/\\/g, '/');
+  const normalizedComponentPath = componentPath.replace(/\\/g, '/').replace(/^\/+/, '');
+  const fullComponentPath = `${normalizedRoot}/${normalizedComponentPath}`.replace(/\/+/g, '/');
+
   const files = await scanProjectDirectory(rootPath);
 
+  console.log('=== Load Project Debug ===');
   console.log('Total files scanned:', files.length);
-  console.log('Root path:', rootPath);
-  console.log('Component path:', componentPath);
+  console.log('Root path:', normalizedRoot);
+  console.log('Component path:', normalizedComponentPath);
+  console.log('Full component path:', fullComponentPath);
   console.log('Extensions:', extensions);
 
   // Find component directories within the specified path
   const componentDirs = files.filter(f => {
-    const isInComponentPath = f.path.startsWith(fullComponentPath);
+    const normalizedFilePath = f.path.replace(/\\/g, '/');
+    const isInComponentPath = normalizedFilePath.includes(fullComponentPath);
     const isDir = f.is_dir;
-    const notRootDir = f.path !== fullComponentPath;
+    const notRootDir = normalizedFilePath !== fullComponentPath && f.name !== componentPath.split('/').pop();
+
+    if (isDir && isInComponentPath) {
+      console.log('Checking dir:', f.name, 'path:', normalizedFilePath, 'matches:', notRootDir);
+    }
+
     return isDir && isInComponentPath && notRootDir;
   });
 
-  console.log('Component directories found:', componentDirs.length, componentDirs.map(d => ({ name: d.name, path: d.path })));
+  console.log('Component directories found:', componentDirs.length);
+  componentDirs.forEach(d => console.log('  -', d.name, 'at', d.path));
 
   const components: Component[] = [];
 
