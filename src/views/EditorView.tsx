@@ -34,6 +34,20 @@ export function EditorView({ component, onBack }: EditorViewProps) {
   }, [selectedVariantIndex]);
 
   const handleTokenChange = async (tokenName: string, value: string) => {
+    // Handle removal
+    if (tokenName.startsWith('__remove__')) {
+      const propToRemove = tokenName.replace('__remove__', '');
+      const newTokens = { ...localTokens };
+      delete newTokens[propToRemove];
+      setLocalTokens(newTokens);
+      try {
+        await updateTokens(selectedVariant.filePath, newTokens);
+      } catch (err) {
+        console.error('Failed to save tokens:', err);
+      }
+      return;
+    }
+
     const newTokens = { ...localTokens, [tokenName]: value };
     setLocalTokens(newTokens);
     try {
