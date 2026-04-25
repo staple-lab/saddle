@@ -27,10 +27,18 @@ export async function parseComponentFile(content: string): Promise<ParsedFile> {
 export async function loadProject(rootPath: string): Promise<ProjectStructure> {
   const files = await scanProjectDirectory(rootPath);
 
-  // Find component directories (assume components are in src/components/)
-  const componentDirs = files.filter(f =>
-    f.is_dir && f.path.includes('/components/') && f.name !== 'components'
-  );
+  console.log('Total files scanned:', files.length);
+  console.log('Root path:', rootPath);
+
+  // Find component directories (look in src/components/ or components/)
+  const componentDirs = files.filter(f => {
+    const hasComponents = f.path.includes('/components/') || f.path.includes('\\components\\');
+    const isDir = f.is_dir;
+    const notComponentsDir = f.name !== 'components' && f.name !== 'src';
+    return isDir && hasComponents && notComponentsDir;
+  });
+
+  console.log('Component directories found:', componentDirs.length, componentDirs.map(d => d.name));
 
   const components: Component[] = [];
 
@@ -40,6 +48,8 @@ export async function loadProject(rootPath: string): Promise<ProjectStructure> {
       f.path.startsWith(dir.path) &&
       f.name.endsWith('.tsx')
     );
+
+    console.log(`Files in ${dir.name}:`, componentFiles.length, componentFiles.map(f => f.name));
 
     const variants = await Promise.all(
       componentFiles.map(async (file) => {
@@ -65,6 +75,8 @@ export async function loadProject(rootPath: string): Promise<ProjectStructure> {
       variants,
     });
   }
+
+  console.log('Total components loaded:', components.length);
 
   return {
     rootPath,
