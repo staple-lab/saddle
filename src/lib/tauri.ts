@@ -44,6 +44,35 @@ export async function loadGlobalConfig(projectRoot: string): Promise<GlobalConfi
   return invoke<GlobalConfig>('load_global_config', { projectRoot });
 }
 
+export async function createVariant(
+  componentDirectory: string,
+  componentName: string,
+  variantName: string,
+  tokens?: Record<string, string>,
+  description?: string,
+): Promise<string> {
+  const tokensJson = tokens ? JSON.stringify(tokens) : undefined;
+  return invoke<string>('create_variant', {
+    componentDirectory,
+    componentName,
+    variantName,
+    tokensJson,
+    description,
+  });
+}
+
+export async function writeComponentFile(filePath: string, content: string): Promise<void> {
+  return invoke<void>('write_component_file', { filePath, content });
+}
+
+export async function readDesignDoc(projectRoot: string): Promise<string> {
+  return invoke<string>('read_component_file', { path: `${projectRoot}/design.md` });
+}
+
+export async function writeDesignDoc(projectRoot: string, content: string): Promise<void> {
+  return invoke<void>('write_component_file', { filePath: `${projectRoot}/design.md`, content });
+}
+
 export async function loadProject(
   rootPath: string,
   componentPath: string = 'src/components',

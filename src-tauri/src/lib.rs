@@ -8,7 +8,7 @@ mod css_generator;
 use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
 use config_loader::{load_config, SaddleConfig};
-use mcp_server::{get_available_tools, MCPTool};
+use mcp_server::{get_available_tools, MCPTool, create_variant_file};
 use css_generator::{generate_css_module, generate_global_css};
 
 #[tauri::command]
@@ -60,6 +60,34 @@ fn generate_global_tokens_css(tokens_json: String) -> Result<String, String> {
     Ok(generate_global_css(&tokens))
 }
 
+#[tauri::command]
+fn create_variant(
+    component_directory: String,
+    component_name: String,
+    variant_name: String,
+    tokens_json: Option<String>,
+    description: Option<String>,
+) -> Result<String, String> {
+    let tokens = tokens_json
+        .as_ref()
+        .map(|j| serde_json::from_str::<serde_json::Value>(j))
+        .transpose()
+        .map_err(|e| format!("Failed to parse tokens: {}", e))?;
+
+    create_variant_file(
+        &component_directory,
+        &component_name,
+        &variant_name,
+        tokens.as_ref(),
+        description.as_deref(),
+    )
+}
+
+#[tauri::command]
+fn write_component_file(file_path: String, content: String) -> Result<(), String> {
+    file_operations::write_file(&file_path, &content)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -74,7 +102,9 @@ pub fn run() {
             load_global_config,
             get_mcp_tools,
             generate_css,
-            generate_global_tokens_css
+            generate_global_tokens_css,
+            create_variant,
+            write_component_file
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

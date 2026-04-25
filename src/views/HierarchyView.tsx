@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { ProjectStructure, Component } from '../types/component';
+import { CodeEditor } from '../components/CodeEditor';
+import { readDesignDoc, writeDesignDoc } from '../lib/tauri';
 
 interface HierarchyViewProps {
   project: ProjectStructure;
+  projectRoot: string;
   onSelectComponent: (component: Component) => void;
 }
 
@@ -41,9 +44,21 @@ function buildTree(project: ProjectStructure): TreeNode {
   return root;
 }
 
-export function HierarchyView({ project, onSelectComponent }: HierarchyViewProps) {
+export function HierarchyView({ project, projectRoot, onSelectComponent }: HierarchyViewProps) {
   const tree = buildTree(project);
   const [expanded, setExpanded] = useState<Set<string>>(new Set([tree.name]));
+  const [activeTab, setActiveTab] = useState<'tree' | 'designmd'>('tree');
+  const [designDoc, setDesignDoc] = useState<string>('');
+  const [designDocLoaded, setDesignDocLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'designmd' && !designDocLoaded) {
+      readDesignDoc(projectRoot)
+        .then(content => { setDesignDoc(content); setDesignDocLoaded(true); })
+        .catch(() => { setDesignDoc('# Design System\n\nNo design.md found. Create one to document your design system.'); setDesignDocLoaded(true); });
+    }
+  }, [activeTab, projectRoot, designDocLoaded]);
 
   const toggleExpand = (name: string) => {
     const next = new Set(expanded);
@@ -52,37 +67,105 @@ export function HierarchyView({ project, onSelectComponent }: HierarchyViewProps
     setExpanded(next);
   };
 
+  const handleSaveDesignDoc = async () => {
+    setSaving(true);
+    try {
+      await writeDesignDoc(projectRoot, designDoc);
+    } catch (err) {
+      console.error('Failed to save design.md:', err);
+    }
+    setSaving(false);
+  };
+
+  const tabs = [
+    { id: 'tree' as const, label: 'Component Tree' },
+    { id: 'designmd' as const, label: 'design.md' },
+  ];
+
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)' }}>
+      {/* Header */}
       <header style={{
-        padding: '16px 20px',
+        padding: '0 20px',
         borderBottom: '1px solid var(--color-border)',
         background: '#ffffff',
         flexShrink: 0,
+        display: 'flex',
+        gap: 0,
       }}>
-        <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--color-fg)' }}>
-          Hierarchy
-        </h2>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-fg-muted)' }}>
-          Component organization tree
-        </p>
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setActiveTab(t.id)}
+            style={{
+              height: 40,
+              padding: '0 16px',
+              background: 'transparent',
+              color: activeTab === t.id ? 'var(--color-fg)' : 'var(--color-fg-muted)',
+              border: 'none',
+              borderBottom: `2px solid ${activeTab === t.id ? 'var(--color-primary)' : 'transparent'}`,
+              fontSize: 13,
+              fontWeight: activeTab === t.id ? 600 : 400,
+              cursor: 'pointer',
+            }}
+          >
+            {t.label}
+          </button>
+        ))}
       </header>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-        <div style={{
-          background: '#ffffff',
-          border: '1px solid var(--color-border)',
-          borderRadius: 10,
-          overflow: 'hidden',
-        }}>
-          <TreeItem
-            node={tree}
-            expanded={expanded}
-            onToggle={toggleExpand}
-            onSelect={onSelectComponent}
-          />
+      {/* Content */}
+      {activeTab === 'tree' ? (
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
+          <div style={{
+            background: '#ffffff',
+            border: '1px solid var(--color-border)',
+            borderRadius: 10,
+            overflow: 'hidden',
+          }}>
+            <TreeItem
+              node={tree}
+              expanded={expanded}
+              onToggle={toggleExpand}
+              onSelect={onSelectComponent}
+            />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>
+              {projectRoot}/design.md
+            </div>
+            <button
+              onClick={handleSaveDesignDoc}
+              disabled={saving}
+              style={{
+                height: 28,
+                padding: '0 12px',
+                background: 'var(--color-primary)',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: saving ? 'not-allowed' : 'pointer',
+                opacity: saving ? 0.6 : 1,
+              }}
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          </div>
+          <div style={{ flex: 1, minHeight: 400 }}>
+            <CodeEditor
+              value={designDoc}
+              language="markdown"
+              readOnly={false}
+              onChange={(v) => { if (v !== undefined) setDesignDoc(v); }}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

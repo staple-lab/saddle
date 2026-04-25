@@ -190,7 +190,7 @@ export function GalleryView() {
       return <ExportView project={project} onBack={() => setView('components')} />;
     }
     if (view === 'hierarchy' && project) {
-      return <HierarchyView project={project} onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }} />;
+      return <HierarchyView project={project} projectRoot={projectRoot} onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }} />;
     }
     if (view === 'dashboard' && project) {
       return <DashboardView project={project} projectRoot={projectRoot} />;

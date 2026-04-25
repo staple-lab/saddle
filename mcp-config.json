@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "saddle": {
+      "command": "node",
+      "args": ["mcp-bridge.mjs"],
+      "cwd": ".",
+      "env": {}
+    }
+  }
+}
