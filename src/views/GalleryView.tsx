@@ -108,10 +108,19 @@ export function GalleryView() {
       )}
       <div className={styles.container}>
         <header className={styles.header}>
-          <h1>Component Gallery</h1>
-          <p className={styles.subtitle}>
-            {project?.components.length || 0} component{project?.components.length !== 1 ? 's' : ''}
-          </p>
+          <div className={styles.headerContent}>
+            <div>
+              <h1>Component Gallery</h1>
+              <p className={styles.subtitle}>
+                {project?.components.length || 0} component{project?.components.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+            {project && (
+              <button onClick={() => { setShowWizard(true); }} className={styles.settingsButton}>
+                Configure Project
+              </button>
+            )}
+          </div>
         </header>
 
         <div className={styles.grid}>
