@@ -1,0 +1,154 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  padding: var(--spacing-md);
+}
+
+.emptyState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-lg);
+  color: var(--color-subtext);
+  gap: var(--spacing-md);
+}
+
+.tokenList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.token {
+  background: var(--color-surface);
+  border-radius: 4px;
+  padding: var(--spacing-md);
+}
+
+.tokenControl {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.tokenLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.tokenName {
+  font-size: var(--font-size-small);
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.colorControl {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.colorPicker {
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.colorInput {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-code);
+  font-size: var(--font-size-small);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.sliderControl {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-border);
+  outline: none;
+  border-radius: 2px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--color-accent);
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  background: var(--color-accent);
+  cursor: pointer;
+  border-radius: 50%;
+  border: none;
+}
+
+.valueInput {
+  width: 80px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-code);
+  font-size: var(--font-size-small);
+  background: var(--color-background);
+  color: var(--color-text);
+  text-align: right;
+}
+
+.textInput {
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-code);
+  font-size: var(--font-size-small);
+  background: var(--color-background);
+  color: var(--color-text);
+}
+
+.textInput:focus,
+.colorInput:focus,
+.valueInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.addButton {
+  padding: 8px 16px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  font-family: var(--font-body);
+  font-size: var(--font-size-small);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.addButton:hover {
+  background: var(--color-overlay);
+  border-color: var(--color-accent);
+}

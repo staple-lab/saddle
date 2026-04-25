@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import type { Component } from '../types/component';
+import { CodeEditor } from '../components/CodeEditor';
+import { StyleEditor } from '../components/StyleEditor';
 import styles from '../styles/EditorView.module.css';
 
 interface EditorViewProps {
@@ -9,7 +11,13 @@ interface EditorViewProps {
 
 export function EditorView({ component, onBack }: EditorViewProps) {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [activeTab, setActiveTab] = useState<'style' | 'code' | 'metadata'>('style');
   const selectedVariant = component.variants[selectedVariantIndex];
+
+  const handleTokenChange = (tokenName: string, value: string) => {
+    console.log('Token changed:', tokenName, value);
+    // TODO: Update frontmatter and regenerate CSS
+  };
 
   return (
     <div className={styles.container}>
@@ -51,39 +59,78 @@ export function EditorView({ component, onBack }: EditorViewProps) {
             ))}
           </div>
 
-          {/* Code Display */}
-          <div className={styles.codePanel}>
-            <div className={styles.panelHeader}>
-              <h3>Code</h3>
-              <span className={styles.filePath}>{selectedVariant.filePath}</span>
-            </div>
-            <pre className={styles.codeBlock}>
-              <code>{selectedVariant.code}</code>
-            </pre>
+          {/* Tab Selector */}
+          <div className={styles.tabSelector}>
+            <button
+              className={`${styles.tab} ${activeTab === 'style' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('style')}
+            >
+              Style Editor
+            </button>
+            <button
+              className={`${styles.tab} ${activeTab === 'code' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('code')}
+            >
+              Code
+            </button>
+            <button
+              className={`${styles.tab} ${activeTab === 'metadata' ? styles.activeTab : ''}`}
+              onClick={() => setActiveTab('metadata')}
+            >
+              Metadata
+            </button>
           </div>
 
-          {/* Frontmatter Display */}
-          {selectedVariant.frontmatter && (
-            <div className={styles.metadataPanel}>
-              <div className={styles.panelHeader}>
-                <h3>Metadata</h3>
+          {/* Tab Content */}
+          <div className={styles.tabContent}>
+            {activeTab === 'style' && (
+              <div className={styles.stylePanel}>
+                <StyleEditor
+                  tokens={selectedVariant.frontmatter?.tokens || {}}
+                  onTokenChange={handleTokenChange}
+                />
               </div>
-              <div className={styles.metadata}>
-                <div className={styles.metadataItem}>
-                  <strong>Name:</strong> {selectedVariant.frontmatter.name || 'N/A'}
+            )}
+
+            {activeTab === 'code' && (
+              <div className={styles.codePanel}>
+                <div className={styles.panelHeader}>
+                  <span className={styles.filePath}>{selectedVariant.filePath}</span>
                 </div>
-                <div className={styles.metadataItem}>
-                  <strong>Description:</strong> {selectedVariant.frontmatter.description || 'N/A'}
-                </div>
-                {selectedVariant.frontmatter.tokens && (
+                <CodeEditor
+                  value={selectedVariant.code}
+                  language="typescript"
+                  readOnly={false}
+                  onChange={(value) => console.log('Code changed:', value?.substring(0, 50))}
+                />
+              </div>
+            )}
+
+            {activeTab === 'metadata' && selectedVariant.frontmatter && (
+              <div className={styles.metadataPanel}>
+                <div className={styles.metadata}>
                   <div className={styles.metadataItem}>
-                    <strong>Tokens:</strong>
-                    <pre>{JSON.stringify(selectedVariant.frontmatter.tokens, null, 2)}</pre>
+                    <strong>Name:</strong> {selectedVariant.frontmatter.name || 'N/A'}
                   </div>
-                )}
+                  <div className={styles.metadataItem}>
+                    <strong>Description:</strong> {selectedVariant.frontmatter.description || 'N/A'}
+                  </div>
+                  {selectedVariant.frontmatter.usage && (
+                    <div className={styles.metadataItem}>
+                      <strong>Usage:</strong>
+                      <pre>{selectedVariant.frontmatter.usage}</pre>
+                    </div>
+                  )}
+                  {selectedVariant.frontmatter.props && (
+                    <div className={styles.metadataItem}>
+                      <strong>Props:</strong>
+                      <pre>{JSON.stringify(selectedVariant.frontmatter.props, null, 2)}</pre>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
