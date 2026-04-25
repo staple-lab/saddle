@@ -46,15 +46,20 @@ export async function loadProject(
   // Find component directories within the specified path
   const componentDirs = files.filter(f => {
     const normalizedFilePath = f.path.replace(/\\/g, '/');
-    const isInComponentPath = normalizedFilePath.includes(fullComponentPath);
     const isDir = f.is_dir;
-    const notRootDir = normalizedFilePath !== fullComponentPath && f.name !== componentPath.split('/').pop();
 
-    if (isDir && isInComponentPath) {
-      console.log('Checking dir:', f.name, 'path:', normalizedFilePath, 'matches:', notRootDir);
-    }
+    if (!isDir) return false;
 
-    return isDir && isInComponentPath && notRootDir;
+    // Must be inside the component path
+    if (!normalizedFilePath.startsWith(fullComponentPath)) return false;
+
+    // Must be a direct child directory (not the root itself)
+    const relativePath = normalizedFilePath.slice(fullComponentPath.length).replace(/^\/+/, '');
+    const isDirectChild = relativePath.length > 0 && !relativePath.includes('/');
+
+    console.log('Dir check:', f.name, 'relative:', relativePath, 'isDirectChild:', isDirectChild);
+
+    return isDirectChild;
   });
 
   console.log('Component directories found:', componentDirs.length);
@@ -63,9 +68,18 @@ export async function loadProject(
   const components: Component[] = [];
 
   for (const dir of componentDirs) {
+    const dirPath = dir.path.replace(/\\/g, '/');
     const componentFiles = files.filter(f => {
       if (f.is_dir) return false;
-      if (!f.path.startsWith(dir.path)) return false;
+
+      const filePath = f.path.replace(/\\/g, '/');
+
+      // Must be directly in this component directory (not in subdirectories)
+      if (!filePath.startsWith(dirPath + '/')) return false;
+
+      const relativePath = filePath.slice(dirPath.length + 1);
+      if (relativePath.includes('/')) return false; // Ignore nested files
+
       return extensions.some(ext => f.name.endsWith(ext));
     });
 
