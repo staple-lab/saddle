@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saddle - Quick Start Guide</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="assets/saddle-logo.png">
+  <style>
+    .guide { padding: 100px 24px 80px; max-width: 760px; margin: 0 auto; }
+    .guide h1 { font-size: 36px; font-weight: 700; letter-spacing: -0.02em; text-align: left; margin-bottom: 8px; }
+    .guide .lede { font-size: 18px; color: var(--fg-muted); margin-bottom: 48px; }
+    .guide h2 { font-size: 22px; text-align: left; margin: 48px 0 16px; }
+    .guide h3 { font-size: 17px; font-weight: 600; margin: 32px 0 12px; text-align: left; }
+    .guide p { font-size: 15px; line-height: 1.7; color: var(--fg); margin-bottom: 16px; }
+    .guide ul, .guide ol { font-size: 15px; line-height: 1.7; padding-left: 24px; margin-bottom: 16px; }
+    .guide li { margin-bottom: 8px; }
+    .guide code {
+      font-family: 'SF Mono', ui-monospace, monospace;
+      font-size: 13px; background: #f1f5f9;
+      padding: 2px 6px; border-radius: 4px;
+    }
+    .guide pre {
+      background: #1e293b; color: #e2e8f0;
+      padding: 20px; border-radius: 10px;
+      overflow-x: auto; margin: 16px 0 24px;
+      font-family: 'SF Mono', ui-monospace, monospace;
+      font-size: 13px; line-height: 1.6;
+    }
+    .guide pre code { background: none; padding: 0; color: inherit; }
+    .step-card {
+      background: #fff; border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    }
+    .step-card h3 { margin: 0 0 8px; }
+    .step-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 28px; height: 28px; background: var(--fg);
+      color: #fff; border-radius: 50%; font-size: 13px;
+      font-weight: 700; margin-right: 12px; flex-shrink: 0;
+    }
+    .step-header { display: flex; align-items: center; margin-bottom: 12px; }
+    .tip {
+      background: #eff6ff; border: 1px solid #bfdbfe;
+      border-radius: 8px; padding: 16px; margin: 16px 0;
+      font-size: 14px; color: #1e40af; line-height: 1.6;
+    }
+    .tip strong { display: block; margin-bottom: 4px; }
+    .warning {
+      background: #fef3c7; border: 1px solid #fcd34d;
+      border-radius: 8px; padding: 16px; margin: 16px 0;
+      font-size: 14px; color: #92400e; line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <img src="assets/saddle-logo.png" alt="Saddle" height="28">
+      </a>
+      <div class="nav-links">
+        <a href="/">Home</a>
+        <a href="quickstart.html">Quick Start</a>
+        <a href="https://github.com/yarv-dev/saddle" class="nav-github">GitHub</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="guide">
+    <h1>Quick Start Guide</h1>
+    <p class="lede">Get Saddle running with your component library in under 5 minutes.</p>
+
+    <!-- Installation -->
+    <h2>Installation</h2>
+
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">1</span>
+        <h3>Download Saddle</h3>
+      </div>
+      <p>Download the latest release for macOS from GitHub:</p>
+      <pre><code># Or build from source:
+git clone https://github.com/yarv-dev/saddle.git
+cd saddle
+npm install
+npm run tauri dev</code></pre>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">2</span>
+        <h3>Prepare your component library</h3>
+      </div>
+      <p>Saddle works with any React component library that uses a directory-per-component structure:</p>
+      <pre><code>my-components/
+├── saddle.config.json          # Global design tokens
+├── design.md                   # Master design system docs
+├── src/
+│   ├── components/
+│   │   ├── Button/
+│   │   │   ├── Button.Primary.tsx
+│   │   │   └── Button.Secondary.tsx
+│   │   └── Input/
+│   │       └── Input.Default.tsx
+│   └── blocks/
+│       └── CardBlock/
+│           └── CardBlock.tsx</code></pre>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">3</span>
+        <h3>Add design.md frontmatter to components</h3>
+      </div>
+      <p>Each component file uses YAML frontmatter that AI can parse:</p>
+      <pre><code>---
+name: Button Primary
+description: Primary action button with high emphasis
+tokens:
+  backgroundColor: "#007AFF"
+  color: "#ffffff"
+  borderRadius: "8px"
+  padding: "12px 24px"
+props:
+  - label: string
+  - onClick: function
+  - disabled?: boolean
+usage: |
+  Use for primary calls-to-action.
+  Never use more than one per screen section.
+---
+
+import React from 'react';
+
+export const ButtonPrimary = ({ label, onClick, disabled }) => (
+  &lt;button onClick={onClick} disabled={disabled}
+    style={{ backgroundColor: '#007AFF', color: '#fff',
+             borderRadius: '8px', padding: '12px 24px' }}&gt;
+    {label}
+  &lt;/button&gt;
+);</code></pre>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">4</span>
+        <h3>Create saddle.config.json</h3>
+      </div>
+      <p>Define your global design tokens:</p>
+      <pre><code>{
+  "name": "My Design System",
+  "version": "0.1.0",
+  "tokens": {
+    "colors": {
+      "primary": "#007AFF",
+      "secondary": "#f5f5f7",
+      "brand": "#1d1d1f",
+      "success": "#34C759",
+      "danger": "#FF3B30",
+      "text": "#1d1d1f",
+      "muted": "#86868b"
+    },
+    "spacing": {
+      "xs": "4px", "sm": "8px", "md": "16px",
+      "lg": "24px", "xl": "32px"
+    },
+    "rounded": {
+      "sm": "4px", "md": "8px", "lg": "12px", "full": "9999px"
+    },
+    "fontSize": {
+      "sm": "12px", "base": "14px", "lg": "16px", "xl": "18px"
+    }
+  }
+}</code></pre>
+    </div>
+
+    <div class="step-card">
+      <div class="step-header">
+        <span class="step-num">5</span>
+        <h3>Load in Saddle</h3>
+      </div>
+      <p>Open Saddle, click <strong>Load Project</strong>, and select your project root. The wizard will auto-detect your component directories and file extensions.</p>
+    </div>
+
+    <!-- Using the Editor -->
+    <h2>Using the Editor</h2>
+
+    <h3>Style Editor (Figma-style)</h3>
+    <p>Click any component in the sidebar to open the editor. The right panel shows all CSS properties organized by section: Layout, Size, Spacing, Fill, Stroke, Typography, Effects.</p>
+    <ul>
+      <li><strong>Token properties</strong> (blue labels) are editable and save to frontmatter</li>
+      <li><strong>Code properties</strong> (gray labels) are read-only extractions from JSX</li>
+      <li>Click <strong>Tokenize</strong> to promote a code property to a token</li>
+      <li>Use the <strong>token picker</strong> to select from your global design tokens</li>
+      <li>Click <strong>x</strong> to remove a token property</li>
+      <li>Click <strong>+ Add</strong> to add any CSS property</li>
+    </ul>
+
+    <h3>Preview</h3>
+    <p>The center panel shows a live preview that updates in real time as you edit tokens. Switch between variants using the tabs at the top.</p>
+
+    <h3>Code Editor</h3>
+    <p>The <strong>Code</strong> tab shows a full Monaco editor (VS Code engine) with syntax highlighting, code folding, and line numbers.</p>
+
+    <h3>AI Guidance</h3>
+    <p>The <strong>AI</strong> tab lets you edit the design.md metadata that Claude Code uses to understand your components: name, description, and usage guidelines.</p>
+
+    <h3>Creating Variants</h3>
+    <p>Click <strong>+ New Variant</strong> in the editor to create a new variant file with boilerplate frontmatter and code.</p>
+
+    <!-- MCP / Claude Code -->
+    <h2>Claude Code Integration (MCP)</h2>
+
+    <h3>One-click setup</h3>
+    <p>Go to <strong>Dashboard > Claude Code (MCP) > Install for Claude Code CLI</strong>. This writes a <code>.mcp.json</code> file to your project root that Claude Code auto-discovers.</p>
+
+    <h3>Manual setup</h3>
+    <p>Add to your Claude Code settings or <code>~/.claude.json</code>:</p>
+    <pre><code>{
+  "mcpServers": {
+    "saddle": {
+      "command": "node",
+      "args": ["/path/to/your/project/mcp-bridge.mjs"]
+    }
+  }
+}</code></pre>
+
+    <h3>Available MCP tools</h3>
+    <p>Once connected, Claude Code can use these tools:</p>
+    <ul>
+      <li><code>saddle_list_components</code> — List all components with variants and metadata</li>
+      <li><code>saddle_get_component</code> — Get full schema (tokens, props, usage) for a component</li>
+      <li><code>saddle_update_tokens</code> — Update design tokens (saves to file immediately)</li>
+      <li><code>saddle_read_component</code> — Read full source code with frontmatter</li>
+      <li><code>saddle_create_variant</code> — Create new variant with boilerplate</li>
+      <li><code>saddle_get_global_tokens</code> — Read saddle.config.json tokens</li>
+    </ul>
+
+    <div class="tip">
+      <strong>Example: Ask Claude to create a variant</strong>
+      "Create a Ghost variant for the Button component with transparent background, #007AFF text color, and no border."
+      <br><br>
+      Claude will use <code>saddle_create_variant</code> to generate the file with proper frontmatter and code.
+    </div>
+
+    <h3>Remote MCP (AWS)</h3>
+    <p>Saddle also runs an MCP server on AWS Lambda for remote access:</p>
+    <pre><code>Endpoint: https://nwkhrtp6qre2dna6muyfyztugu0kliiu.lambda-url.ap-southeast-2.on.aws/
+DNS: mcp.saddle.staplelab.com (coming soon)</code></pre>
+
+    <!-- Export -->
+    <h2>Exporting</h2>
+
+    <h3>npm Package</h3>
+    <p>Go to <strong>Export > Build Package</strong>. Saddle generates:</p>
+    <ul>
+      <li>Clean React components (frontmatter stripped)</li>
+      <li>Generated CSS Modules from tokens</li>
+      <li>Global <code>tokens.css</code> with CSS variables</li>
+      <li><code>package.json</code> with conditional exports (dev reads source, prod reads dist)</li>
+      <li><code>index.ts</code> barrel export</li>
+    </ul>
+
+    <h3>W3C Design Tokens (DTCG)</h3>
+    <p>Click <strong>Export DTCG tokens.json</strong> to generate tokens in W3C Design Tokens Community Group format for interoperability with Figma, Style Dictionary, and other tools.</p>
+
+    <h3>Deduplication Analysis</h3>
+    <p>Click <strong>Run Analysis</strong> to scan all components for:</p>
+    <ul>
+      <li><strong>Token duplicates</strong> — Same value used across components (suggests creating a shared token)</li>
+      <li><strong>Structure duplicates</strong> — Components with identical JSX patterns (suggests extraction)</li>
+    </ul>
+
+    <!-- Hierarchy & Design Doc -->
+    <h2>Organization</h2>
+
+    <h3>Hierarchy View</h3>
+    <p>The <strong>Hierarchy</strong> view in the sidebar shows an expandable tree of your entire component library: project root > components > variants.</p>
+
+    <h3>Master design.md</h3>
+    <p>The <strong>design.md</strong> tab in Hierarchy view lets you edit your master design system documentation in a full Monaco markdown editor. This file lives at your project root and documents the design system for both humans and AI.</p>
+
+    <!-- Dev Server -->
+    <h2>Dev Server Connection</h2>
+    <p>Go to <strong>Dashboard > Dev Server</strong> to connect to a running dev server:</p>
+    <ul>
+      <li><strong>Auto-detect</strong> scans common ports (3000, 5173, 8080, 4200, 3001)</li>
+      <li><strong>Manual</strong> enter any URL</li>
+    </ul>
+    <p>When connected, Saddle's file watcher detects changes and logs them in the terminal. Your dev server's HMR picks up token changes automatically.</p>
+
+    <div class="tip">
+      <strong>File watcher</strong>
+      Saddle watches your project directory for external changes (IDE edits, Claude Code modifications). All changes appear in the terminal feed.
+    </div>
+
+    <!-- Terminal -->
+    <h2>Terminal Feed</h2>
+    <p>The bottom panel shows a live log of all activity: file changes, token updates, Claude Code interactions, and build output. Click <strong>Terminal</strong> to toggle it. You can also type commands to send to Claude Code (when connected via MCP).</p>
+
+    <div style="margin-top: 64px; text-align: center;">
+      <a href="/" class="btn btn-primary">Back to Home</a>
+      <a href="https://github.com/yarv-dev/saddle" class="btn btn-secondary" style="margin-left: 8px;">View Source</a>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <div class="section-inner">
+      <p>Saddle is open source. Apache-2.0 License.</p>
+      <a href="https://github.com/yarv-dev/saddle">GitHub</a>
+    </div>
+  </footer>
+</body>
+</html>
