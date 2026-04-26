@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::io::{self, BufRead, Write};
-use std::sync::{Arc, Mutex};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ComponentSchema {
@@ -217,7 +215,8 @@ pub fn create_variant_file(
         String::from("  backgroundColor: \"#ffffff\"")
     };
 
-    let desc = description.unwrap_or(&format!("{} {} variant", component_name, variant_name));
+    let default_desc = format!("{} {} variant", component_name, variant_name);
+    let desc = description.unwrap_or(&default_desc);
 
     let content = format!(
 r#"---

@@ -103,7 +103,6 @@ fn analyze_structure(components_json: String) -> Result<Vec<StructureDuplicate>,
 }
 
 #[tauri::command]
-#[tauri::command]
 fn watch_project(app_handle: tauri::AppHandle, project_root: String) -> Result<(), String> {
     start_watching(app_handle, project_root)
 }
@@ -126,7 +125,7 @@ fn build_package(
 
     // Generate index.ts
     let mut index_exports = Vec::new();
-    let mut css_content = String::new();
+    let _css_content = String::new();
 
     for component in &components {
         let name = component["name"].as_str().unwrap_or("Component");
