@@ -305,9 +305,23 @@ function jsxToHtml(code: string, tokens: Record<string, string>): string {
 
   // --- Apply live token overrides to root element ---
   if (Object.keys(tokens).length > 0) {
+    // Map custom token names to valid CSS properties
+    const tokenNameMap: Record<string, string> = {
+      textColor: 'color',
+      bgColor: 'background-color',
+      activeColor: 'background-color',
+      inactiveColor: 'background-color',
+      thumbColor: 'color',
+    };
+
     const tokenStyle = Object.entries(tokens)
-      .map(([k, v]) => `${k.replace(/([A-Z])/g, '-$1').toLowerCase()}: ${v}`)
+      .filter(([, v]) => v !== '') // skip empty values
+      .map(([k, v]) => {
+        const cssName = tokenNameMap[k] || k.replace(/([A-Z])/g, '-$1').toLowerCase();
+        return `${cssName}: ${v} !important`;
+      })
       .join('; ');
+
     const firstStyleMatch = html.match(/style="([^"]*)"/);
     if (firstStyleMatch) {
       html = html.replace(firstStyleMatch[0], `style="${firstStyleMatch[1]}; ${tokenStyle}"`);
@@ -449,6 +463,20 @@ export function ComponentPreview({ code, frontmatter, liveTokens, devServerUrl, 
 <html>
 <head>
 <style>
+  :root {
+    --spacing-xs: 4px; --spacing-sm: 8px; --spacing-md: 16px;
+    --spacing-lg: 20px; --spacing-xl: 24px; --spacing-xxl: 32px;
+    --colors-primary: #007AFF; --colors-secondary: #f5f5f7;
+    --colors-brand: #1d1d1f; --colors-accent: #007AFF;
+    --colors-background: #ffffff; --colors-surface: #f5f5f7;
+    --colors-text: #1d1d1f; --colors-subtext: #86868b;
+    --colors-border: #d1d1d6; --colors-error: #FF3B30;
+    --colors-success: #34C759; --colors-warning: #FF9500;
+    --rounded-none: 0px; --rounded-sm: 4px; --rounded-md: 8px;
+    --rounded-lg: 12px; --rounded-full: 9999px;
+    --font-size-xs: 11px; --font-size-sm: 13px;
+    --font-size-base: 14px; --font-size-lg: 16px; --font-size-xl: 18px;
+  }
   * { box-sizing: border-box; }
   html, body {
     height: 100%;
