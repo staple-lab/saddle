@@ -99,9 +99,41 @@ h2 {
 }
 .hero-actions { display: flex; gap: 10px; justify-content: center; }
 
+/* Hero demo intro */
+.hero-demo-intro {
+  max-width: 1040px; margin: 40px auto 16px; text-align: center;
+}
+.hero-demo-intro p {
+  font-size: 14px; color: var(--fg-tertiary); font-weight: 500;
+}
+
 /* === HERO PRODUCT SHOWCASE === */
 .hero-showcase {
-  max-width: 1040px; margin: 56px auto 0; position: relative;
+  max-width: 1040px; margin: 0 auto; position: relative;
+}
+
+/* Flow explanation below demo */
+.hero-flow-explain {
+  max-width: 760px; margin: 32px auto 80px;
+  display: flex; align-items: center; justify-content: center; gap: 12px;
+}
+.hfe-step {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 14px 16px; background: var(--white);
+  border: 1px solid var(--border); border-radius: 10px; flex: 1;
+}
+.hfe-num {
+  width: 24px; height: 24px; background: var(--fg); color: var(--white);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; flex-shrink: 0;
+}
+.hfe-step strong { font-size: 13px; color: var(--fg); }
+.hfe-step span { font-size: 12px; color: var(--fg-secondary); }
+.hfe-arrow { font-size: 18px; color: var(--fg-tertiary); flex-shrink: 0; }
+
+@media (max-width: 900px) {
+  .hero-flow-explain { flex-direction: column; }
+  .hfe-arrow { transform: rotate(90deg); }
 }
 .hero-showcase-frame {
   border: 1px solid var(--border);
