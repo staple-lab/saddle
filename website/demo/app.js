@@ -162,46 +162,19 @@ function render() {
           </div>
         </div>
         <div class="sd-preview">
-          <div class="sd-localhost">
-            <div class="sd-localhost-chrome">
-              <div class="sd-chrome-dots"><span></span><span></span><span></span></div>
-              <div class="sd-chrome-url">localhost:5173</div>
-            </div>
-            <div class="sd-localhost-page" style="${state.breakpoint > 0 ? 'max-width:'+state.breakpoint+'px;margin:0 auto' : ''}">
-              <div class="sd-fake-nav">
-                <span class="sd-fake-logo">Acme</span>
-                <div class="sd-fake-links"><span>Products</span><span>Pricing</span><span>Docs</span></div>
-              </div>
-              <div class="sd-fake-hero">
-                <div class="sd-fake-h1">Ship faster with Acme</div>
-                <div class="sd-fake-sub">The modern platform for building great products.</div>
-                <div class="sd-fake-ctas">
-                  <button id="sd-btn" style="
-                    background-color:${tokens.backgroundColor};
-                    color:${tokens.color};
-                    padding:${tokens.padding};
-                    border-radius:${tokens.borderRadius};
-                    font-size:${tokens.fontSize};
-                    font-weight:${tokens.fontWeight};
-                    border:${tokens.border};
-                    font-family:inherit;
-                    cursor:pointer;
-                    transition:all 0.15s ease;
-                  ">Get Started</button>
-                  <button style="
-                    background:transparent;
-                    color:#525252;
-                    padding:${tokens.padding};
-                    border-radius:${tokens.borderRadius};
-                    font-size:${tokens.fontSize};
-                    font-weight:500;
-                    border:1px solid #e5e5e5;
-                    font-family:inherit;
-                    cursor:pointer;
-                  ">Learn More</button>
-                </div>
-              </div>
-            </div>
+          <div class="sd-component-preview" style="${state.breakpoint > 0 ? 'max-width:'+state.breakpoint+'px' : ''}">
+            <button id="sd-btn" style="
+              background-color:${tokens.backgroundColor};
+              color:${tokens.color};
+              padding:${tokens.padding};
+              border-radius:${tokens.borderRadius};
+              font-size:${tokens.fontSize};
+              font-weight:${tokens.fontWeight};
+              border:${tokens.border};
+              font-family:inherit;
+              cursor:pointer;
+              transition:all 0.15s ease;
+            ">Get Started</button>
           </div>
         </div>
         <div class="sd-terminal">
