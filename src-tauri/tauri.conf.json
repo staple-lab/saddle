@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "saddle-app",
+  "productName": "Saddle",
   "version": "0.1.0",
-  "identifier": "com.timojarvinen.saddle-app",
+  "identifier": "com.staplelab.saddle",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
@@ -12,10 +12,14 @@
   "app": {
     "windows": [
       {
-        "title": "saddle-app",
-        "width": 800,
-        "height": 600,
-        "label": "main"
+        "title": "Saddle",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 960,
+        "minHeight": 600,
+        "label": "main",
+        "decorations": true,
+        "titleBarStyle": "Overlay"
       }
     ],
     "security": {

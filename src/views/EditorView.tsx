@@ -14,11 +14,10 @@ interface EditorViewProps {
   devServerUrl?: string;
 }
 
-type Tab = 'style' | 'elements' | 'code' | 'ai' | 'metadata';
+type Tab = 'style' | 'code' | 'ai' | 'metadata';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'style', label: 'Style' },
-  { id: 'elements', label: 'Elements' },
   { id: 'code', label: 'Code' },
   { id: 'ai', label: 'AI' },
   { id: 'metadata', label: 'Metadata' },
@@ -29,6 +28,8 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
   const [tab, setTab] = useState<Tab>('style');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<string | null>(null);
+  const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
+  const [elementsCollapsed, setElementsCollapsed] = useState(false);
   const selectedVariant = component.variants[selectedVariantIndex];
 
   useEffect(() => {
@@ -63,6 +64,72 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
 
   return (
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
+      {/* Left Panel - Element Tree */}
+      <div style={{
+        width: elementsCollapsed ? 28 : 260,
+        flexShrink: 0,
+        height: '100%',
+        display: 'flex',
+        flexDirection: 'column',
+        borderRight: '1px solid var(--color-border)',
+        background: '#ffffff',
+        transition: 'width 150ms ease',
+        overflow: 'hidden',
+      }}>
+        <header style={{
+          display: 'flex',
+          alignItems: 'center',
+          height: 40,
+          flexShrink: 0,
+          borderBottom: elementsCollapsed ? 'none' : '1px solid var(--color-border)',
+          padding: elementsCollapsed ? 0 : '0 8px 0 12px',
+          justifyContent: elementsCollapsed ? 'center' : 'space-between',
+        }}>
+          {!elementsCollapsed && (
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-fg)', whiteSpace: 'nowrap' }}>
+              Elements
+            </span>
+          )}
+          <button
+            onClick={() => setElementsCollapsed(!elementsCollapsed)}
+            title={elementsCollapsed ? 'Expand elements panel' : 'Collapse elements panel'}
+            style={{
+              width: 22,
+              height: 22,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 4,
+              cursor: 'pointer',
+              color: 'var(--color-fg-muted)',
+              fontSize: 14,
+              flexShrink: 0,
+              transition: 'background 80ms',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            {elementsCollapsed ? '\u25B6' : '\u25C0'}
+          </button>
+        </header>
+        {!elementsCollapsed && (
+          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
+            <ElementTree
+              code={selectedVariant.code}
+              tokens={localTokens}
+              onSelectElement={(styles, path) => {
+                setSelectedElementPath(path);
+                setSelectedElementStyles(styles);
+                setTab('style');
+              }}
+              selectedPath={selectedElementPath}
+            />
+          </div>
+        )}
+      </div>
+
       {/* Center Stage - Preview */}
       <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)', overflow: 'hidden' }}>
         {/* Variant bar */}
@@ -170,15 +237,10 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
         {/* Tab Content */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {tab === 'style' && (
-            <StyleEditor tokens={localTokens} code={selectedVariant.code} onTokenChange={handleTokenChange} />
-          )}
-
-          {tab === 'elements' && (
-            <ElementTree
+            <StyleEditor
+              tokens={selectedElementStyles ?? localTokens}
               code={selectedVariant.code}
-              tokens={localTokens}
-              onSelectElement={(styles, path) => setSelectedElementPath(path)}
-              selectedPath={selectedElementPath}
+              onTokenChange={handleTokenChange}
             />
           )}
 
