@@ -16,7 +16,7 @@ interface SidebarProps {
   onViewChange: (view: AppView) => void;
 }
 
-export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadProject, onConfigure, onExport, view, onViewChange }: SidebarProps) {
+export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadProject, onConfigure: _onConfigure, onExport, view, onViewChange }: SidebarProps) {
   const [search, setSearch] = useState('');
 
   const filteredComponents = project?.components.filter(c =>

@@ -21,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'metadata', label: 'Metadata' },
 ];
 
-export function EditorView({ component, onBack }: EditorViewProps) {
+export function EditorView({ component }: EditorViewProps) {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [tab, setTab] = useState<Tab>('style');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});

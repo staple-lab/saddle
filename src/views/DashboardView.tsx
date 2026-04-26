@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import type { ProjectStructure } from '../types/component';
 
 interface DashboardViewProps {
@@ -9,13 +9,13 @@ interface DashboardViewProps {
 export function DashboardView({ project, projectRoot }: DashboardViewProps) {
   const [devServerUrl, setDevServerUrl] = useState('');
   const [devServerStatus, setDevServerStatus] = useState<'disconnected' | 'checking' | 'connected'>('disconnected');
-  const [mcpStatus, setMcpStatus] = useState<'disconnected' | 'connected'>('disconnected');
+  const [mcpStatus] = useState<'disconnected' | 'connected'>('disconnected');
 
   const checkDevServer = async (url: string) => {
     if (!url) return;
     setDevServerStatus('checking');
     try {
-      const resp = await fetch(url, { mode: 'no-cors' });
+      await fetch(url, { mode: 'no-cors' });
       setDevServerStatus('connected');
     } catch {
       setDevServerStatus('disconnected');

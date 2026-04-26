@@ -8,7 +8,7 @@ interface ExportViewProps {
   onBack: () => void;
 }
 
-export function ExportView({ project, projectRoot, onBack }: ExportViewProps) {
+export function ExportView({ project, projectRoot }: ExportViewProps) {
   const [exporting, setExporting] = useState(false);
   const [packageName, setPackageName] = useState('@myorg/components');
   const [result, setResult] = useState<string | null>(null);

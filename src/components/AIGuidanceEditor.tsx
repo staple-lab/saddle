@@ -6,7 +6,7 @@ interface AIGuidanceEditorProps {
 }
 
 export function AIGuidanceEditor({ frontmatter, onUpdate }: AIGuidanceEditorProps) {
-  const [editing, setEditing] = useState<string | null>(null);
+  const [, setEditing] = useState<string | null>(null);
 
   const fields = [
     { key: 'name', label: 'Name', placeholder: 'Component name' },
