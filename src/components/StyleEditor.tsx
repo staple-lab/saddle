@@ -55,19 +55,80 @@ const ALL_PROPERTIES: { section: string; props: string[] }[] = [
   },
 ];
 
-// Extract inline styles from component code
+// Extract ALL inline styles from component code using bracket-counting
 function extractCodeStyles(code: string): Record<string, string> {
   const styles: Record<string, string> = {};
-  const styleBlockRegex = /style=\{\{([^}]+(?:\{[^}]*\}[^}]*)*)\}\}/g;
-  let match;
-  while ((match = styleBlockRegex.exec(code)) !== null) {
-    const block = match[1];
-    const propRegex = /(\w+)\s*:\s*['"]([^'"]+)['"]/g;
+  const marker = 'style={{';
+  let searchFrom = 0;
+
+  while (true) {
+    const startIdx = code.indexOf(marker, searchFrom);
+    if (startIdx === -1) break;
+
+    // Find matching }} using bracket counting
+    let depth = 2; // we're past the {{
+    let i = startIdx + marker.length;
+    let inStr: string | null = null;
+
+    while (i < code.length && depth > 0) {
+      const ch = code[i];
+      if (inStr) {
+        if (ch === inStr && code[i - 1] !== '\\') inStr = null;
+      } else {
+        if (ch === "'" || ch === '"' || ch === '`') inStr = ch;
+        else if (ch === '{') depth++;
+        else if (ch === '}') depth--;
+      }
+      if (depth > 0) i++;
+    }
+
+    const block = code.substring(startIdx + marker.length, i);
+
+    // Parse key: value pairs from the block
+    const propRegex = /(\w+)\s*:\s*/g;
     let propMatch;
     while ((propMatch = propRegex.exec(block)) !== null) {
-      styles[propMatch[1]] = propMatch[2];
+      const key = propMatch[1];
+      let valStart = propMatch.index + propMatch[0].length;
+      let value = '';
+
+      // Read value: handle quoted strings, numbers, and expressions
+      let vi = valStart;
+      let vInStr: string | null = null;
+      let vDepth = 0;
+
+      while (vi < block.length) {
+        const vc = block[vi];
+        if (vInStr) {
+          if (vc === vInStr && block[vi - 1] !== '\\') {
+            vInStr = null;
+          }
+        } else {
+          if (vc === "'" || vc === '"' || vc === '`') vInStr = vc;
+          else if (vc === '(' || vc === '{' || vc === '[') vDepth++;
+          else if (vc === ')' || vc === '}' || vc === ']') {
+            if (vDepth > 0) vDepth--;
+            else break;
+          }
+          else if ((vc === ',' || vc === '\n') && vDepth === 0) break;
+        }
+        vi++;
+      }
+
+      value = block.substring(valStart, vi).trim();
+      // Strip quotes
+      if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
+        value = value.slice(1, -1);
+      }
+      // Skip ternary/complex expressions, keep simple values
+      if (value && !value.includes('?') && !value.includes('=>') && key !== 'transition') {
+        styles[key] = value;
+      }
     }
+
+    searchFrom = i + 1;
   }
+
   return styles;
 }
 
