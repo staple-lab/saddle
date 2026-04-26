@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { ProjectStructure, Component } from '../types/component';
 import { SearchBar } from './SearchBar';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import saddleLogo from '/saddle-logo.png?url';
 
 export type AppView = 'components' | 'hierarchy' | 'dashboard' | 'export';
@@ -63,7 +64,7 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
                 color: 'var(--color-fg-subtle)', fontSize: 14, padding: '0 2px',
               }}
             >
-              ◀
+              <PanelLeftClose size={14} />
             </button>
           </>
         )}

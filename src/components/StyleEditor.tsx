@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { TokenPicker } from '../tokens/TokenPicker';
 import { detectTokenSlot } from '../lib/cssProperties';
+import { ChevronRight } from 'lucide-react';
 
 interface StyleEditorProps {
   tokens: Record<string, string>;
@@ -124,39 +125,38 @@ export function StyleEditor({ tokens, code, onTokenChange }: StyleEditorProps) {
         return (
           <div key={section} style={{ borderBottom: '1px solid var(--color-border)' }}>
             {/* Section Header */}
-            <button
+            <div
               onClick={() => toggleSection(section)}
+              role="button"
+              tabIndex={0}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 width: '100%',
-                height: 32,
+                height: 34,
                 padding: '0 12px',
-                background: 'transparent',
-                border: 'none',
+                background: isExpanded ? 'rgba(0,0,0,0.02)' : 'transparent',
                 cursor: 'pointer',
-                textAlign: 'left',
+                userSelect: 'none',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.02)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.03)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = isExpanded ? 'rgba(0,0,0,0.02)' : 'transparent'; }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{
-                  fontSize: 9,
                   color: 'var(--color-fg-subtle)',
-                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                  transition: 'transform 100ms',
-                  display: 'inline-block',
-                }}>▶</span>
+                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)',
+                  transition: 'transform 150ms ease',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                }}><ChevronRight size={10} /></span>
                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-fg)' }}>{section}</span>
               </div>
-              {activeProps.length > 0 && (
-                <span style={{ fontSize: 10, color: 'var(--color-primary)', fontWeight: 600 }}>
-                  {activeProps.length}
-                </span>
-              )}
-            </button>
+              <span style={{ fontSize: 10, color: activeProps.length > 0 ? 'var(--color-primary)' : 'var(--color-fg-subtle)', fontWeight: 600 }}>
+                {activeProps.length > 0 ? activeProps.length : ''}
+              </span>
+            </div>
 
             {/* Properties */}
             {isExpanded && (

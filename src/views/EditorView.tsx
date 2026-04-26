@@ -7,6 +7,7 @@ import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { ResizablePanel } from '../components/ResizablePanel';
 import { ElementTree } from '../components/ElementTree';
 import { updateTokens, createVariant } from '../lib/tauri';
+import { ChevronRight, ChevronLeft, Plus } from 'lucide-react';
 
 interface EditorViewProps {
   component: Component;
@@ -111,7 +112,7 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
           >
-            {elementsCollapsed ? '\u25B6' : '\u25C0'}
+            {elementsCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
           </button>
         </header>
         {!elementsCollapsed && (

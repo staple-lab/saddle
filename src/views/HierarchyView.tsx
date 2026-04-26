@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ChevronRight } from 'lucide-react';
 import type { ProjectStructure, Component } from '../types/component';
 import { CodeEditor } from '../components/CodeEditor';
 import { readDesignDoc, writeDesignDoc } from '../lib/tauri';
@@ -214,7 +215,7 @@ function TreeItem({ node, expanded, onToggle, onSelect }: {
             transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)',
             display: 'inline-block',
           }}>
-            ▶
+<ChevronRight size={10} />
           </span>
         )}
         {!hasChildren && <span style={{ width: 10 }} />}

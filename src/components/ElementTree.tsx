@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { ChevronRight } from 'lucide-react';
 
 interface ElementNode {
   tag: string;
@@ -152,7 +153,7 @@ function TreeNode({ node, depth, path, onSelect, selectedPath }: {
             transform: expanded ? 'rotate(90deg)' : 'rotate(0)',
             transition: 'transform 80ms', display: 'inline-block',
           }}>
-            ▶
+<ChevronRight size={10} />
           </span>
         )}
         {!hasChildren && <span style={{ width: 8 }} />}
