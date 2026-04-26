@@ -158,6 +158,22 @@ h2 {
   border-radius: 4px; font-family: 'SF Mono', ui-monospace, monospace;
   font-size: 11px; color: var(--fg); background: var(--white);
 }
+/* Live editor inputs */
+.live-prop {
+  display: flex; align-items: center; gap: 6px; height: 28px;
+}
+.live-input {
+  flex: 1; min-width: 0; height: 24px; padding: 0 6px;
+  font-size: 11px; font-family: 'SF Mono', ui-monospace, monospace;
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--white); color: var(--fg);
+  transition: border-color 120ms;
+}
+.live-input:focus {
+  outline: none; border-color: var(--blue);
+  box-shadow: 0 0 0 2px rgba(37,99,235,0.12);
+}
+
 .mock-prop-value.highlight {
   border-color: var(--blue); background: var(--blue-light);
   animation: pulse-border 2s ease-in-out infinite;
