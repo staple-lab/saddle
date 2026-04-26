@@ -63,7 +63,7 @@ export function EditorView({ component }: EditorViewProps) {
   return (
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
       {/* Center Stage - Preview */}
-      <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)' }}>
+      <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)', overflow: 'hidden' }}>
         {/* Variant bar */}
         <div style={{
           padding: '12px 20px',
@@ -120,7 +120,7 @@ export function EditorView({ component }: EditorViewProps) {
         </div>
 
         {/* Preview */}
-        <div style={{ flex: 1, padding: 20 }}>
+        <div style={{ flex: 1, minHeight: 0, padding: 20, display: 'flex', flexDirection: 'column' }}>
           <ComponentPreview
             code={selectedVariant.code}
             frontmatter={selectedVariant.frontmatter}

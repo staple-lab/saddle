@@ -14,9 +14,11 @@
 .content {
   background: var(--color-background);
   border-radius: var(--border-radius);
-  padding: var(--spacing-lg);
+  padding: 24px;
   max-width: 600px;
   width: 90%;
+  max-height: 85vh;
+  overflow-y: auto;
   box-shadow: var(--shadow-md);
 }
 
