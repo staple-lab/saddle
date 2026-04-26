@@ -115,12 +115,107 @@ h2 {
   text-align: center;
   background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
 }
+
+/* Demo Section */
+.demo-section { padding: 80px 0 100px; }
 .hero-demo {
   max-width: 1100px;
-  margin: 48px auto 0;
+  margin: 0 auto;
   box-shadow: 0 8px 40px rgba(0,0,0,0.12);
   border-radius: 12px;
   overflow: hidden;
+}
+.demo-callouts {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  max-width: 1100px;
+  margin: 0 auto 24px;
+}
+.demo-callout {
+  padding: 12px 16px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.demo-callout strong {
+  display: block;
+  font-size: 12px;
+  color: var(--primary);
+  margin-bottom: 2px;
+}
+.demo-callout span {
+  color: var(--fg-muted);
+  font-size: 12px;
+}
+.demo-explanation {
+  max-width: 1100px;
+  margin: 48px auto 0;
+  text-align: left;
+}
+.demo-explanation h3 {
+  font-size: 20px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 32px;
+}
+.flow-diagram {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 0 16px;
+}
+.flow-step {
+  flex: 1;
+  min-width: 180px;
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.flow-num {
+  width: 28px;
+  height: 28px;
+  background: var(--fg);
+  color: #fff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.flow-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.flow-text strong {
+  font-size: 13px;
+  color: var(--fg);
+}
+.flow-text span {
+  font-size: 12px;
+  color: var(--fg-muted);
+  line-height: 1.5;
+}
+.flow-arrow {
+  font-size: 24px;
+  color: var(--fg-muted);
+  align-self: center;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .demo-callouts { grid-template-columns: repeat(2, 1fr); }
+  .flow-diagram { flex-direction: column; }
+  .flow-arrow { transform: rotate(90deg); align-self: center; }
 }
 .hero-inner { max-width: 800px; margin: 0 auto; }
 .hero-badge {

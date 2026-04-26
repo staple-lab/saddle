@@ -6,7 +6,7 @@
   <title>Saddle - Component Builder with AI Design Integration</title>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="demo/demo.css">
-  <link rel="icon" href="/assets/saddle-logo.png">
+  <link rel="icon" href="assets/saddle-logo.png">
 </head>
 <body>
   <!-- Nav -->
@@ -16,9 +16,9 @@
         <img src="assets/saddle-logo.png" alt="Saddle" height="28">
       </a>
       <div class="nav-links">
+        <a href="#demo">Live Demo</a>
         <a href="#features">Features</a>
         <a href="quickstart.html">Quick Start</a>
-        <a href="#download">Download</a>
         <a href="https://github.com/yarv-dev/saddle" class="nav-github">GitHub</a>
       </div>
     </div>
@@ -29,28 +29,91 @@
     <div class="hero-inner">
       <div class="hero-badge">Now in Beta</div>
       <h1>Build component libraries<br>that AI understands</h1>
-      <p class="hero-sub">Token-first design, live editing, and bidirectional Claude Code integration.</p>
+      <p class="hero-sub">Saddle is a desktop component editor that connects to your running dev server. Edit design tokens visually, see your real app update via HMR, and let Claude Code modify components through MCP.</p>
       <div class="hero-actions">
-        <a href="#download" class="btn btn-primary">Download for Mac</a>
-        <a href="https://github.com/yarv-dev/saddle" class="btn btn-secondary">View on GitHub</a>
+        <a href="#demo" class="btn btn-primary">Try the Live Demo</a>
+        <a href="https://github.com/yarv-dev/saddle/releases/tag/v0.1.0" class="btn btn-secondary">Download for Mac</a>
       </div>
     </div>
+  </section>
 
-    <!-- Live Demo embedded in hero -->
-    <div class="hero-demo">
-      <div class="demo-app">
-        <div class="demo-sidebar" id="demo-sidebar"></div>
-        <div style="flex:1;display:flex;flex-direction:column;min-width:0">
-          <div class="demo-stage" id="demo-stage"></div>
-          <div class="demo-terminal">
-            <div class="demo-terminal-header">
-              <span>Terminal</span>
-              <span id="demo-terminal-count"></span>
+  <!-- Live Demo -->
+  <section id="demo" class="demo-section">
+    <div class="section-inner">
+      <h2>See it in action</h2>
+      <p class="section-sub">This is a working replica of Saddle's editor. Change token values on the right and watch the component update instantly on the left - the same way it works with your real dev server.</p>
+
+      <div class="demo-callouts">
+        <div class="demo-callout">
+          <strong>1. Sidebar</strong>
+          <span>Browse your component library</span>
+        </div>
+        <div class="demo-callout">
+          <strong>2. Preview</strong>
+          <span>Live component render - updates as you edit tokens</span>
+        </div>
+        <div class="demo-callout">
+          <strong>3. Inspector</strong>
+          <span>Edit token values, pick from your design system</span>
+        </div>
+        <div class="demo-callout">
+          <strong>4. Terminal</strong>
+          <span>See file changes and Claude Code activity</span>
+        </div>
+      </div>
+
+      <div class="hero-demo">
+        <div class="demo-app">
+          <div class="demo-sidebar" id="demo-sidebar"></div>
+          <div style="flex:1;display:flex;flex-direction:column;min-width:0">
+            <div class="demo-stage" id="demo-stage"></div>
+            <div class="demo-terminal">
+              <div class="demo-terminal-header">
+                <span>Terminal</span>
+                <span id="demo-terminal-count"></span>
+              </div>
+              <div class="demo-terminal-log" id="demo-terminal-log"></div>
             </div>
-            <div class="demo-terminal-log" id="demo-terminal-log"></div>
+          </div>
+          <div class="demo-inspector" id="demo-inspector"></div>
+        </div>
+      </div>
+
+      <div class="demo-explanation">
+        <h3>How this connects to your real app</h3>
+        <div class="flow-diagram">
+          <div class="flow-step">
+            <div class="flow-num">1</div>
+            <div class="flow-text">
+              <strong>You edit a token in Saddle</strong>
+              <span>Change backgroundColor from #007AFF to #FF3B30</span>
+            </div>
+          </div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">
+            <div class="flow-num">2</div>
+            <div class="flow-text">
+              <strong>Saddle writes to your .tsx file</strong>
+              <span>Updates the design.md frontmatter on disk</span>
+            </div>
+          </div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">
+            <div class="flow-num">3</div>
+            <div class="flow-text">
+              <strong>Dev server HMR picks it up</strong>
+              <span>Vite / webpack detects the file change</span>
+            </div>
+          </div>
+          <div class="flow-arrow">&rarr;</div>
+          <div class="flow-step">
+            <div class="flow-num">4</div>
+            <div class="flow-text">
+              <strong>Your app updates live</strong>
+              <span>Saddle embeds your localhost - you see it instantly</span>
+            </div>
           </div>
         </div>
-        <div class="demo-inspector" id="demo-inspector"></div>
       </div>
     </div>
   </section>
@@ -79,18 +142,18 @@
         </div>
         <div class="feature-card">
           <div class="feature-icon">HMR</div>
-          <h3>Live Dev Server</h3>
-          <p>Connect to your running dev server. Edit tokens in Saddle, see changes instantly via HMR.</p>
+          <h3>Live Dev Server Preview</h3>
+          <p>Embed your running localhost app inside Saddle. Edit tokens, file saves to disk, HMR updates your real app instantly.</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon">CSS</div>
-          <h3>CSS Module Generation</h3>
-          <p>Tokens automatically generate CSS Modules with CSS variables. Zero manual CSS writing.</p>
+          <div class="feature-icon">DOM</div>
+          <h3>Element Inspector</h3>
+          <p>Chrome DevTools-style element tree showing your component's full DOM hierarchy with computed styles per element.</p>
         </div>
         <div class="feature-card">
           <div class="feature-icon">npm</div>
           <h3>npm Package Export</h3>
-          <p>One-click export as publishable npm package with conditional exports for dev and production.</p>
+          <p>One-click export with conditional exports, generated CSS Modules, global tokens.css, and DTCG format.</p>
         </div>
       </div>
     </div>
@@ -99,27 +162,27 @@
   <!-- How It Works -->
   <section id="how-it-works" class="how-it-works">
     <div class="section-inner">
-      <h2>How it works</h2>
+      <h2>Get started in 5 minutes</h2>
       <div class="steps">
         <div class="step">
           <div class="step-num">1</div>
           <h3>Load your project</h3>
-          <p>Point Saddle at any React component library. It scans for components and parses design.md frontmatter automatically.</p>
+          <p>Point Saddle at any React component library. It auto-detects component directories and parses design.md frontmatter.</p>
         </div>
         <div class="step">
           <div class="step-num">2</div>
-          <h3>Edit with tokens</h3>
-          <p>Visual style editor with token pickers for colors, spacing, radii, and typography. All changes save back to your files.</p>
+          <h3>Connect dev server</h3>
+          <p>Saddle auto-detects your running localhost server and embeds it. Or use isolated preview mode.</p>
         </div>
         <div class="step">
           <div class="step-num">3</div>
-          <h3>Connect Claude Code</h3>
-          <p>Add Saddle's MCP server to Claude Code. Now AI can read your component schemas and make changes that appear in Saddle instantly.</p>
+          <h3>Edit with tokens</h3>
+          <p>Figma-style property inspector with token pickers. Changes save to disk and your app updates via HMR.</p>
         </div>
         <div class="step">
           <div class="step-num">4</div>
-          <h3>Export and ship</h3>
-          <p>Build an npm package with conditional exports, generated CSS Modules, TypeScript types, and clean production code.</p>
+          <h3>Connect Claude Code</h3>
+          <p>One-click MCP setup. Claude reads your component schemas, updates tokens, and creates variants.</p>
         </div>
       </div>
     </div>
