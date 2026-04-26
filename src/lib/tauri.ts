@@ -98,6 +98,30 @@ export async function buildPackage(projectRoot: string, packageName: string, com
   return invoke<string>('build_package', { projectRoot, packageName, componentsJson });
 }
 
+export async function watchProject(projectRoot: string): Promise<void> {
+  return invoke<void>('watch_project', { projectRoot });
+}
+
+// DTCG (W3C Design Tokens) export
+export function exportDTCG(config: GlobalConfig): string {
+  const dtcg: Record<string, any> = {};
+
+  for (const [name, value] of Object.entries(config.tokens.colors)) {
+    dtcg[`color-${name}`] = { $type: 'color', $value: value };
+  }
+  for (const [name, value] of Object.entries(config.tokens.spacing)) {
+    dtcg[`spacing-${name}`] = { $type: 'dimension', $value: value };
+  }
+  for (const [name, value] of Object.entries(config.tokens.rounded)) {
+    dtcg[`radius-${name}`] = { $type: 'dimension', $value: value };
+  }
+  for (const [name, value] of Object.entries(config.tokens.fontSize)) {
+    dtcg[`fontSize-${name}`] = { $type: 'dimension', $value: value };
+  }
+
+  return JSON.stringify(dtcg, null, 2);
+}
+
 export async function loadProject(
   rootPath: string,
   componentPath: string = 'src/components',
@@ -187,8 +211,51 @@ export async function loadProject(
 
   console.log('Total components loaded:', components.length);
 
+  // Scan for blocks (directories under src/blocks or blocks/)
+  const blocks: import('../types/component').Block[] = [];
+  const blockDirs = files.filter(f => {
+    const normalizedFilePath = f.path.replace(/\\/g, '/');
+    return f.is_dir && (normalizedFilePath.includes('/blocks/') && !normalizedFilePath.endsWith('/blocks'));
+  });
+
+  for (const dir of blockDirs) {
+    const propsFile = files.find(f => !f.is_dir && f.path.startsWith(dir.path) && f.name.endsWith('.props.json'));
+    let props: Record<string, string> = {};
+    if (propsFile) {
+      try {
+        const propsContent = await readComponentFile(propsFile.path);
+        props = JSON.parse(propsContent);
+      } catch {}
+    }
+
+    // Read block file to find composed components
+    const blockFile = files.find(f => !f.is_dir && f.path.startsWith(dir.path) && (f.name.endsWith('.tsx') || f.name.endsWith('.jsx')));
+    let composedComponents: string[] = [];
+    if (blockFile) {
+      try {
+        const content = await readComponentFile(blockFile.path);
+        const importMatches = content.match(/import.*from.*['"]\.\.\/(components|\.\.\/components)\/(\w+)/g);
+        if (importMatches) {
+          composedComponents = importMatches.map(m => {
+            const match = m.match(/\/(\w+)['"]/);
+            return match ? match[1] : '';
+          }).filter(Boolean);
+        }
+      } catch {}
+    }
+
+    blocks.push({
+      name: dir.name,
+      directory: dir.path,
+      components: composedComponents,
+      propsFile: propsFile?.path || '',
+      props,
+    });
+  }
+
   return {
     rootPath,
     components,
+    blocks,
   };
 }

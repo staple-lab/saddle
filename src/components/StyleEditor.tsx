@@ -299,9 +299,26 @@ function PropertyRow({ name, value, isToken, onChange, onRemove }: {
         onBlur={(e) => { e.currentTarget.style.borderColor = 'transparent'; }}
       />
 
-      {/* Token picker */}
+      {/* Token picker for token properties */}
       {isToken && slot && (
         <TokenPicker slot={slot} value={value} onPick={(v) => onChange(v)} />
+      )}
+
+      {/* Convert to token button for non-token properties */}
+      {!isToken && (
+        <button
+          onClick={() => onChange(value)}
+          title="Convert to editable token"
+          style={{
+            height: 20, padding: '0 6px',
+            background: 'transparent', border: '1px solid var(--color-border)',
+            borderRadius: 3, cursor: 'pointer',
+            fontSize: 9, color: 'var(--color-primary)', fontWeight: 600,
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >
+          Tokenize
+        </button>
       )}
 
       {/* Remove button */}

@@ -5,6 +5,7 @@ mod config_loader;
 mod mcp_server;
 mod css_generator;
 mod dedup_analyzer;
+mod file_watcher;
 
 use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
@@ -12,6 +13,7 @@ use config_loader::{load_config, SaddleConfig};
 use mcp_server::{get_available_tools, MCPTool, create_variant_file};
 use css_generator::{generate_css_module, generate_global_css};
 use dedup_analyzer::{analyze_token_duplication, analyze_structure_duplication, DuplicateToken, StructureDuplicate};
+use file_watcher::start_watching;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -98,6 +100,12 @@ fn analyze_duplicates(components_json: String) -> Result<Vec<DuplicateToken>, St
 #[tauri::command]
 fn analyze_structure(components_json: String) -> Result<Vec<StructureDuplicate>, String> {
     analyze_structure_duplication(&components_json)
+}
+
+#[tauri::command]
+#[tauri::command]
+fn watch_project(app_handle: tauri::AppHandle, project_root: String) -> Result<(), String> {
+    start_watching(app_handle, project_root)
 }
 
 #[tauri::command]
@@ -212,7 +220,8 @@ pub fn run() {
             write_component_file,
             analyze_duplicates,
             analyze_structure,
-            build_package
+            build_package,
+            watch_project
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

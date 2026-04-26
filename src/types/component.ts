@@ -29,7 +29,18 @@ export interface Component {
   variants: ComponentVariant[];
 }
 
+// Blocks are composition patterns (e.g., CardBlock = Input + Button)
+// They accept props only, no direct styling via tokens
+export interface Block {
+  name: string;
+  directory: string;
+  components: string[]; // Names of composed components
+  propsFile: string;
+  props: Record<string, string>;
+}
+
 export interface ProjectStructure {
   rootPath: string;
   components: Component[];
+  blocks: Block[];
 }

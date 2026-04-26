@@ -80,6 +80,20 @@ export function Sidebar({ project, onSelectComponent, selectedComponent, onLoadP
               )}
             </Section>
 
+            {project.blocks && project.blocks.length > 0 && (
+              <Section label="Blocks">
+                {project.blocks.map((block, idx) => (
+                  <NavItem
+                    key={`block-${idx}`}
+                    label={block.name}
+                    subtitle={`${block.components.length} components`}
+                    active={false}
+                    onClick={() => {}}
+                  />
+                ))}
+              </Section>
+            )}
+
             <Section label="Views">
               <NavItem label="Hierarchy" active={view === 'hierarchy'} onClick={() => onViewChange('hierarchy')} />
               <NavItem label="Dashboard" active={view === 'dashboard'} onClick={() => onViewChange('dashboard')} />

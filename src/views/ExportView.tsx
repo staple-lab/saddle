@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ProjectStructure } from '../types/component';
-import { buildPackage, analyzeDuplicates, analyzeStructure, type DuplicateToken, type StructureDuplicate } from '../lib/tauri';
+import { buildPackage, analyzeDuplicates, analyzeStructure, loadGlobalConfig, exportDTCG, writeComponentFile, type DuplicateToken, type StructureDuplicate } from '../lib/tauri';
 
 interface ExportViewProps {
   project: ProjectStructure;
@@ -15,6 +15,7 @@ export function ExportView({ project, projectRoot }: ExportViewProps) {
   const [duplicates, setDuplicates] = useState<DuplicateToken[]>([]);
   const [structureDups, setStructureDups] = useState<StructureDuplicate[]>([]);
   const [analyzing, setAnalyzing] = useState(false);
+  const [dtcgResult, setDtcgResult] = useState<string | null>(null);
 
   const handleExport = async () => {
     setExporting(true);
@@ -174,6 +175,45 @@ export function ExportView({ project, projectRoot }: ExportViewProps) {
               </div>
             )}
           </Card>
+          {/* DTCG Export */}
+          <Card title="W3C Design Tokens (DTCG)">
+            <p style={{ fontSize: 12, color: 'var(--color-fg-muted)', lineHeight: 1.5, margin: '0 0 12px' }}>
+              Export tokens in W3C Design Tokens Community Group format for interoperability with other design tools.
+            </p>
+            <button
+              onClick={async () => {
+                try {
+                  const config = await loadGlobalConfig(projectRoot);
+                  const dtcg = exportDTCG(config);
+                  const outPath = `${projectRoot}/dist/tokens.json`;
+                  await writeComponentFile(outPath, dtcg);
+                  setDtcgResult(`Exported to ${outPath}`);
+                } catch (err) {
+                  setDtcgResult(`Error: ${err}`);
+                }
+              }}
+              style={{
+                height: 28, padding: '0 12px',
+                background: '#ffffff', color: 'var(--color-fg)',
+                border: '1px solid var(--color-border)', borderRadius: 6,
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                boxShadow: 'var(--elevation-1)',
+              }}
+            >
+              Export DTCG tokens.json
+            </button>
+            {dtcgResult && (
+              <div style={{
+                marginTop: 8, padding: 8, borderRadius: 6,
+                background: dtcgResult.startsWith('Error') ? '#FFF1F0' : '#F0FFF4',
+                border: `1px solid ${dtcgResult.startsWith('Error') ? '#FFA39E' : '#B7EB8F'}`,
+                fontSize: 12,
+              }}>
+                {dtcgResult}
+              </div>
+            )}
+          </Card>
+
         </div>
       </div>
     </div>

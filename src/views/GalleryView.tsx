@@ -7,8 +7,9 @@ import { EditorView } from './EditorView';
 import { ExportView } from './ExportView';
 import { HierarchyView } from './HierarchyView';
 import { DashboardView } from './DashboardView';
-import { loadProject, loadGlobalConfig } from '../lib/tauri';
+import { loadProject, loadGlobalConfig, watchProject } from '../lib/tauri';
 import { loadTokensFromConfig } from '../tokens/tokens';
+import { listen } from '@tauri-apps/api/event';
 import type { ProjectStructure, Component } from '../types/component';
 
 function VerticalDivider({ isOpen, onToggle, logCount }: { isOpen: boolean; onToggle: () => void; logCount: number }) {
@@ -105,6 +106,20 @@ export function GalleryView() {
 
       setProject(loadedProject);
       addLog('success', `Loaded ${loadedProject.components.length} components`, 'saddle');
+
+      // Start file watching
+      try {
+        await watchProject(projectRoot);
+        addLog('info', 'File watcher started', 'watcher');
+
+        listen<{ paths: string[]; kind: string }>('file-changed', (event) => {
+          const { paths, kind } = event.payload;
+          const fileNames = paths.map(p => p.split('/').pop()).join(', ');
+          addLog('info', `${kind}: ${fileNames}`, 'watcher');
+        });
+      } catch (err) {
+        addLog('warning', `File watcher failed: ${err}`, 'watcher');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load project');
       addLog('error', `Failed: ${err}`, 'saddle');
