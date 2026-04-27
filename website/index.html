@@ -22,7 +22,6 @@
 
   <section class="hero">
     <div class="hero-inner">
-      <div class="hero-badge">Open Source</div>
       <h1>The component editor<br>AI agents need</h1>
       <p class="hero-sub">Edit design tokens visually. Your running app updates live through HMR. Claude Code modifies components through MCP.</p>
       <div class="hero-actions">
@@ -36,9 +35,14 @@
       <p>Try it now — change a token value on the right and watch the component update instantly</p>
     </div>
 
-    <!-- Stripped-down version of the real Saddle app -->
+    <!-- Stripped-down version of the real Saddle app, floating over a western backdrop -->
     <div class="hero-showcase">
-      <div id="saddle-demo"></div>
+      <div class="hero-backdrop" aria-hidden="true">
+        <img src="assets/western-sunset.png" alt="">
+      </div>
+      <div class="hero-stage">
+        <div id="saddle-demo"></div>
+      </div>
     </div>
 
     <!-- What just happened -->
@@ -89,39 +93,92 @@
   <!-- Features -->
   <section id="features" class="features">
     <div class="section-inner">
-      <h2>Built for designers and frontend devs</h2>
-      <p class="section-sub">Everything you need to author, edit, and ship a production component library.</p>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="feature-icon blue">T</div>
-          <h3>Token-First Design</h3>
-          <p>All styles controlled through design tokens. Saddle enforces consistency and auto-suggests tokenization for raw values.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon violet">AI</div>
-          <h3>AI-Readable Components</h3>
-          <p>design.md frontmatter gives AI explicit metadata: when to use components, constraints, and best practices.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon blue">MCP</div>
-          <h3>Claude Code Integration</h3>
-          <p>Bidirectional MCP server. Claude reads schemas, updates tokens, creates variants. One-click setup.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon green">HMR</div>
-          <h3>Live Dev Server Preview</h3>
-          <p>Embed your running localhost inside Saddle. Edit tokens, file writes to disk, your real app updates via HMR.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon violet">DOM</div>
-          <h3>Element Inspector</h3>
-          <p>Chrome DevTools-style element tree with computed styles per element. Click to see and edit any property.</p>
-        </div>
-        <div class="feature-card">
-          <div class="feature-icon green">npm</div>
-          <h3>npm Package Export</h3>
-          <p>One-click build with conditional exports, CSS Modules, global tokens.css, DTCG format.</p>
-        </div>
+      <div class="feat-heading">
+        <h2>Built for designers and frontend devs</h2>
+      </div>
+      <div class="feat-cards">
+
+        <article class="feat-card">
+          <div class="feat-card-text">
+            <h3>Token-first design</h3>
+            <p>All styles flow through semantic tokens. Edit <strong>Primary</strong> once and every component restyles — across designers, code, and AI.</p>
+            <a href="#tokens" class="feat-link">See the token model ↗</a>
+          </div>
+          <figure class="feat-figure">
+            <div class="feat-panel">
+              <div class="ftk">
+                <div class="ftk-card">
+                  <div class="ftk-head">
+                    <span class="ftk-dot" style="background:#2563eb"></span>
+                    <span>Primary</span>
+                    <code class="ftk-code">--primary-*</code>
+                  </div>
+                  <div class="ftk-rows">
+                    <div class="ftk-row"><span class="ftk-sw" style="background:#2563eb"></span><span>bg</span><span class="ftk-mono">#2563eb</span></div>
+                    <div class="ftk-row"><span class="ftk-sw" style="background:#1d4ed8"></span><span>bg-hover</span><span class="ftk-mono">#1d4ed8</span></div>
+                    <div class="ftk-row"><span class="ftk-sw" style="background:#bfdbfe"></span><span>border</span><span class="ftk-mono">#bfdbfe</span></div>
+                  </div>
+                </div>
+                <div class="ftk-card">
+                  <div class="ftk-head">
+                    <span class="ftk-dot" style="background:#dc2626"></span>
+                    <span>Destructive</span>
+                    <code class="ftk-code">--destructive-*</code>
+                  </div>
+                  <div class="ftk-rows">
+                    <div class="ftk-row"><span class="ftk-sw" style="background:#dc2626"></span><span>bg</span><span class="ftk-mono">#dc2626</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </figure>
+        </article>
+
+        <article class="feat-card">
+          <div class="feat-card-text">
+            <h3>Live element inspector</h3>
+            <p>Cmd-click any element in your running app. See its computed styles, edit them inline, and watch the iframe restyle in the same frame.</p>
+            <a href="#bridge" class="feat-link">Read about the bridge ↗</a>
+          </div>
+          <figure class="feat-figure">
+            <div class="feat-panel feat-panel-stage">
+              <div class="finsp">
+                <div class="finsp-canvas">
+                  <button class="finsp-btn" type="button">Get started</button>
+                  <div class="finsp-outline"></div>
+                  <div class="finsp-tip">⌘ + click</div>
+                </div>
+                <div class="finsp-panel">
+                  <div class="finsp-row"><span class="finsp-key">padding-x</span><span class="finsp-val">var(--space-md)</span></div>
+                  <div class="finsp-row"><span class="finsp-key">background</span><span class="finsp-val"><span class="finsp-sw" style="background:#2563eb"></span>--primary-bg</span></div>
+                  <div class="finsp-row"><span class="finsp-key">radius</span><span class="finsp-val">8px</span></div>
+                </div>
+              </div>
+            </div>
+          </figure>
+        </article>
+
+        <article class="feat-card">
+          <div class="feat-card-text">
+            <h3>Built for AI agents</h3>
+            <p>Saddle exposes structured component data over MCP. Claude Code reads schemas, updates tokens, and creates variants — no screenshots needed.</p>
+            <a href="#mcp" class="feat-link">Set up Claude Code ↗</a>
+          </div>
+          <figure class="feat-figure">
+            <div class="feat-panel feat-panel-dark">
+              <div class="fchat">
+                <div class="fchat-msg fchat-user">Make Primary purple instead of blue.</div>
+                <ul class="fchat-tools">
+                  <li><span class="fchat-step">Read</span><span class="fchat-step-detail">saddle.config.json</span></li>
+                  <li><span class="fchat-step">Edited</span><span class="fchat-step-detail">primary.bg → #9333ea</span></li>
+                  <li><span class="fchat-step">Updated</span><span class="fchat-step-detail">3 components restyled live</span></li>
+                </ul>
+                <div class="fchat-msg fchat-bot">Done. Primary now reads <code>#9333ea</code> across all components.</div>
+              </div>
+            </div>
+          </figure>
+        </article>
+
       </div>
     </div>
   </section>
@@ -130,6 +187,106 @@
     <div class="section-inner">
       <h2>Start in 5 minutes</h2>
       <p class="section-sub">Works with any React component library.</p>
+
+      <!-- Cursor-style overlapping demo windows -->
+      <div class="hiw-stage" aria-hidden="true">
+        <span class="sr-only">An interactive demo showing the Saddle desktop editor and the saddle-bridge.js companion script floating over a brand backdrop.</span>
+
+        <!-- Primary: Saddle Desktop -->
+        <div class="hiw-window hiw-window-primary">
+          <div class="hiw-titlebar">
+            <div class="hiw-dots"><span></span><span></span><span></span></div>
+            <div class="hiw-title">Saddle Desktop</div>
+          </div>
+          <div class="hiw-body">
+            <div class="hiw-app">
+              <aside class="hiw-app-sidebar">
+                <div class="hiw-app-brand">
+                  <div class="hiw-app-mark"></div>
+                  <span>Saddle</span>
+                </div>
+                <div class="hiw-app-section">
+                  <div class="hiw-app-label">Tokens</div>
+                  <div class="hiw-app-row hiw-active"><span class="hiw-app-dot" style="background:#dc2626"></span> Colors</div>
+                  <div class="hiw-app-row"><span class="hiw-app-dot" style="background:#9ca3af"></span> Spacing</div>
+                  <div class="hiw-app-row"><span class="hiw-app-dot" style="background:#6b7280"></span> Radius</div>
+                  <div class="hiw-app-row"><span class="hiw-app-dot" style="background:#1d4ed8"></span> Typography</div>
+                </div>
+                <div class="hiw-app-section">
+                  <div class="hiw-app-label">Components</div>
+                  <div class="hiw-app-row">Button</div>
+                  <div class="hiw-app-row">Input</div>
+                  <div class="hiw-app-row">Card</div>
+                </div>
+              </aside>
+              <main class="hiw-app-main">
+                <div class="hiw-app-toolbar">
+                  <div class="hiw-app-bp"><div class="hiw-app-bp-pill active">Full</div></div>
+                  <div class="hiw-app-newvar">+ New Variant</div>
+                </div>
+                <div class="hiw-app-canvas">
+                  <div class="hiw-app-card">
+                    <div class="hiw-card-head">Primary</div>
+                    <div class="hiw-card-rows">
+                      <div class="hiw-card-row"><span class="hiw-sw" style="background:#2563eb"></span><span>bg</span><span class="hiw-mono">#2563eb</span></div>
+                      <div class="hiw-card-row"><span class="hiw-sw" style="background:#1d4ed8"></span><span>bg-hover</span><span class="hiw-mono">#1d4ed8</span></div>
+                      <div class="hiw-card-row"><span class="hiw-sw" style="background:#ffffff;border:1px solid #e5e7eb"></span><span>text-on</span><span class="hiw-mono">#ffffff</span></div>
+                      <div class="hiw-card-row"><span class="hiw-sw" style="background:#bfdbfe"></span><span>border</span><span class="hiw-mono">#bfdbfe</span></div>
+                    </div>
+                  </div>
+                  <div class="hiw-app-card">
+                    <div class="hiw-card-head">Destructive</div>
+                    <div class="hiw-card-rows">
+                      <div class="hiw-card-row"><span class="hiw-sw" style="background:#dc2626"></span><span>bg</span><span class="hiw-mono">#dc2626</span></div>
+                      <div class="hiw-card-row"><span class="hiw-sw" style="background:#fecaca"></span><span>border</span><span class="hiw-mono">#fecaca</span></div>
+                    </div>
+                  </div>
+                </div>
+              </main>
+              <aside class="hiw-app-inspector">
+                <div class="hiw-app-tab">Style</div>
+                <div class="hiw-app-field">
+                  <label>Padding X</label>
+                  <div class="hiw-input">var(--space-md)</div>
+                </div>
+                <div class="hiw-app-field">
+                  <label>Background</label>
+                  <div class="hiw-input"><span class="hiw-sw small" style="background:#2563eb"></span>primary-bg</div>
+                </div>
+                <div class="hiw-app-field">
+                  <label>Radius</label>
+                  <div class="hiw-input">8px</div>
+                </div>
+              </aside>
+            </div>
+          </div>
+        </div>
+
+        <!-- Secondary: Bridge / CLI -->
+        <div class="hiw-window hiw-window-secondary">
+          <div class="hiw-titlebar">
+            <div class="hiw-dots"><span></span><span></span><span></span></div>
+            <div class="hiw-title">saddle-bridge.js</div>
+          </div>
+          <div class="hiw-body hiw-body-cli">
+            <div class="hiw-cli">
+              <div class="hiw-cli-line"><span class="hiw-cli-dim">~/your-design-system</span></div>
+              <div class="hiw-cli-line"><span class="hiw-cli-prompt">$</span> npm run dev</div>
+              <div class="hiw-cli-line hiw-cli-dim">vite v5 ready · localhost:5173</div>
+              <div class="hiw-cli-line">&nbsp;</div>
+              <div class="hiw-cli-line"><span class="hiw-cli-mark">●</span> bridge installed</div>
+              <div class="hiw-cli-line hiw-cli-dim">listening on postMessage from Saddle…</div>
+              <div class="hiw-cli-line">&nbsp;</div>
+              <div class="hiw-cli-line hiw-cli-dim">→ saddle:set-tokens <span class="hiw-cli-key">--primary-bg</span> <span class="hiw-cli-str">'#9333ea'</span></div>
+              <div class="hiw-cli-line hiw-cli-dim">← applied to :root, repaint in 4ms</div>
+              <div class="hiw-cli-line">&nbsp;</div>
+              <div class="hiw-cli-line hiw-cli-dim">→ saddle:set-element-styles <span class="hiw-cli-key">padding-inline</span> <span class="hiw-cli-str">'24px'</span></div>
+              <div class="hiw-cli-line hiw-cli-dim">← override applied, button #path=[0,0,1]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="steps">
         <div class="step"><div class="step-num">1</div><h3>Load your project</h3><p>Auto-detects components and parses design.md frontmatter.</p></div>
         <div class="step"><div class="step-num">2</div><h3>Connect dev server</h3><p>Auto-detects localhost. Your running app appears inside Saddle.</p></div>

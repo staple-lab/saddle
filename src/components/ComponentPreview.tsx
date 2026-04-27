@@ -554,11 +554,14 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
         case 'saddle:element':
           onElementSelected?.(msg.path ?? [], msg.styles ?? {});
           break;
+        case 'saddle:deselect':
+          onCanvasClick?.();
+          break;
       }
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [onTree, onElementSelected, onBridgeChange]);
+  }, [onTree, onElementSelected, onBridgeChange, onCanvasClick]);
 
   // Reset bridge state when the URL changes
   useEffect(() => {
@@ -690,7 +693,12 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
           )}
           {onNewVariant && (
             <button
-              onClick={onNewVariant}
+              type="button"
+              onClick={(e) => {
+                console.log('[new-variant] toolbar button clicked');
+                e.stopPropagation();
+                onNewVariant();
+              }}
               style={{
                 height: 26,
                 padding: '0 10px',
@@ -702,6 +710,8 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
                 fontWeight: 500,
                 cursor: 'pointer',
                 boxShadow: 'var(--elevation-1)',
+                position: 'relative',
+                zIndex: 10,
               }}
             >
               + New Variant

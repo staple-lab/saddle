@@ -293,14 +293,22 @@
   document.addEventListener(
     'click',
     function (e) {
-      if (!inspectModifier(e)) return;
       var t = e.target;
       if (!(t instanceof Element)) return;
-      var path = elementToPath(t);
-      if (path) {
-        e.preventDefault();
-        e.stopPropagation();
-        sendElement(path);
+      if (inspectModifier(e)) {
+        var path = elementToPath(t);
+        if (path) {
+          e.preventDefault();
+          e.stopPropagation();
+          sendElement(path);
+        }
+        return;
+      }
+      // Plain click on a non-interactive area → deselect. We treat anything that isn't
+      // (or doesn't sit inside) a button/link/form control as canvas whitespace.
+      var interactive = 'button, a, input, select, textarea, label, [role="button"], [role="link"], [role="textbox"], [contenteditable="true"]';
+      if (!t.closest || !t.closest(interactive)) {
+        postParent({ type: 'saddle:deselect' });
       }
     },
     true
