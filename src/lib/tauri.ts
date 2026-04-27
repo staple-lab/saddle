@@ -184,23 +184,29 @@ export async function loadProject(
 
     console.log(`Files in ${dir.name}:`, componentFiles.length, componentFiles.map(f => f.name));
 
-    const variants = await Promise.all(
+    const variantResults = await Promise.all(
       componentFiles.map(async (file) => {
-        const content = await readComponentFile(file.path);
-        const parsed = await parseComponentFile(content);
+        try {
+          const content = await readComponentFile(file.path);
+          const parsed = await parseComponentFile(content);
 
-        // Extract variant name from filename (e.g., "Button.Primary.tsx" -> "Primary")
-        const fileNameParts = file.name.replace('.tsx', '').split('.');
-        const variantName = fileNameParts.length > 1 ? fileNameParts[fileNameParts.length - 1] : 'Default';
+          // Extract variant name from filename (e.g., "Button.Primary.tsx" -> "Primary")
+          const fileNameParts = file.name.replace(/\.(tsx|jsx|ts|js)$/, '').split('.');
+          const variantName = fileNameParts.length > 1 ? fileNameParts[fileNameParts.length - 1] : 'Default';
 
-        return {
-          filePath: file.path,
-          variantName,
-          frontmatter: parsed.frontmatter,
-          code: parsed.code,
-        };
+          return {
+            filePath: file.path,
+            variantName,
+            frontmatter: parsed.frontmatter,
+            code: parsed.code,
+          };
+        } catch (err) {
+          console.warn(`Skipping ${file.path}:`, err);
+          return null;
+        }
       })
     );
+    const variants = variantResults.filter((v): v is NonNullable<typeof v> => v !== null);
 
     components.push({
       name: dir.name,

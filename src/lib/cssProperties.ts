@@ -63,9 +63,15 @@ export const CSS_PROPERTIES: Record<string, CSSPropertyDef> = {
   'border-bottom-left-radius': { name: 'border-bottom-left-radius', types: ['length'], tokenSlot: 'radius' },
   'borderBottomLeftRadius': { name: 'borderBottomLeftRadius', types: ['length'], tokenSlot: 'radius' },
 
-  // Font Size
+  // Typography
+  'font-family': { name: 'font-family', types: ['custom'], tokenSlot: 'fontFamily' },
+  'fontFamily': { name: 'fontFamily', types: ['custom'], tokenSlot: 'fontFamily' },
   'font-size': { name: 'font-size', types: ['length'], tokenSlot: 'fontSize' },
   'fontSize': { name: 'fontSize', types: ['length'], tokenSlot: 'fontSize' },
+  'font-weight': { name: 'font-weight', types: ['number', 'keyword'], tokenSlot: 'fontWeight' },
+  'fontWeight': { name: 'fontWeight', types: ['number', 'keyword'], tokenSlot: 'fontWeight' },
+  'letter-spacing': { name: 'letter-spacing', types: ['length'], tokenSlot: 'letterSpacing' },
+  'letterSpacing': { name: 'letterSpacing', types: ['length'], tokenSlot: 'letterSpacing' },
 
   // Border Width
   'border-width': { name: 'border-width', types: ['length'], allowsMultiple: true },
@@ -92,8 +98,8 @@ export const CSS_PROPERTIES: Record<string, CSSPropertyDef> = {
   'maxHeight': { name: 'maxHeight', types: ['length', 'percentage'] },
 
   // Line height
-  'line-height': { name: 'line-height', types: ['number', 'length'] },
-  'lineHeight': { name: 'lineHeight', types: ['number', 'length'] },
+  'line-height': { name: 'line-height', types: ['number', 'length'], tokenSlot: 'lineHeight' },
+  'lineHeight': { name: 'lineHeight', types: ['number', 'length'], tokenSlot: 'lineHeight' },
 
   // Opacity
   'opacity': { name: 'opacity', types: ['number'] },
@@ -135,6 +141,18 @@ export function detectTokenSlot(propertyName: string, value?: string): TokenSlot
     }
     if (value.startsWith('var(--font-size')) {
       return 'fontSize';
+    }
+    if (value.startsWith('var(--font-family')) {
+      return 'fontFamily';
+    }
+    if (value.startsWith('var(--font-weight')) {
+      return 'fontWeight';
+    }
+    if (value.startsWith('var(--line-height')) {
+      return 'lineHeight';
+    }
+    if (value.startsWith('var(--letter-spacing')) {
+      return 'letterSpacing';
     }
   }
 

@@ -1,143 +1,66 @@
 import { useState, useMemo } from 'react';
 import { TokenPicker } from '../tokens/TokenPicker';
 import { detectTokenSlot } from '../lib/cssProperties';
-import { ChevronRight } from 'lucide-react';
 
 interface StyleEditorProps {
   tokens: Record<string, string>;
   code?: string;
   onTokenChange: (key: string, value: string) => void;
+  onStateChange?: (state: string) => void;
 }
 
-// Complete CSS property catalog
-const ALL_PROPERTIES: { section: string; props: string[] }[] = [
+type FieldDef = { label: string; key: string };
+type Row = FieldDef | [FieldDef, FieldDef];
+type SectionDef = { title: string; rows: Row[] };
+
+const SECTIONS: SectionDef[] = [
   {
-    section: 'Layout',
-    props: [
-      'display', 'position', 'top', 'right', 'bottom', 'left', 'inset',
-      'zIndex', 'overflow', 'overflowX', 'overflowY', 'float', 'clear',
-      'visibility', 'boxSizing', 'objectFit', 'objectPosition',
-      // Flexbox
-      'flexDirection', 'flexWrap', 'flexFlow', 'justifyContent', 'alignItems',
-      'alignContent', 'alignSelf', 'flex', 'flexGrow', 'flexShrink', 'flexBasis', 'order',
-      // Grid
-      'gridTemplateColumns', 'gridTemplateRows', 'gridTemplateAreas',
-      'gridAutoColumns', 'gridAutoRows', 'gridAutoFlow',
-      'gridColumn', 'gridColumnStart', 'gridColumnEnd',
-      'gridRow', 'gridRowStart', 'gridRowEnd',
-      'gridArea', 'gridGap', 'justifyItems', 'justifySelf', 'placeContent', 'placeItems', 'placeSelf',
-      // Container
-      'containerType', 'containerName',
+    title: 'Layout',
+    rows: [
+      [
+        { label: 'Padding X', key: 'paddingInline' },
+        { label: 'Padding Y', key: 'paddingBlock' },
+      ],
+      { label: 'Gap', key: 'gap' },
     ],
   },
   {
-    section: 'Size',
-    props: [
-      'width', 'height', 'minWidth', 'minHeight', 'maxWidth', 'maxHeight',
-      'aspectRatio', 'boxDecorationBreak',
+    title: 'Background',
+    rows: [{ label: 'Background', key: 'backgroundColor' }],
+  },
+  {
+    title: 'Border',
+    rows: [
+      [
+        { label: 'Radius', key: 'borderRadius' },
+        { label: 'Width', key: 'borderWidth' },
+      ],
+      { label: 'Color', key: 'borderColor' },
     ],
   },
   {
-    section: 'Spacing',
-    props: [
-      'padding', 'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
-      'paddingInline', 'paddingInlineStart', 'paddingInlineEnd',
-      'paddingBlock', 'paddingBlockStart', 'paddingBlockEnd',
-      'margin', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
-      'marginInline', 'marginInlineStart', 'marginInlineEnd',
-      'marginBlock', 'marginBlockStart', 'marginBlockEnd',
-      'gap', 'rowGap', 'columnGap',
+    title: 'Typography',
+    rows: [
+      [
+        { label: 'Color', key: 'color' },
+        { label: 'Size', key: 'fontSize' },
+      ],
+      [
+        { label: 'Weight', key: 'fontWeight' },
+        { label: 'Line height', key: 'lineHeight' },
+      ],
+      { label: 'Family', key: 'fontFamily' },
     ],
   },
   {
-    section: 'Fill',
-    props: [
-      'backgroundColor', 'background', 'backgroundImage', 'backgroundSize',
-      'backgroundPosition', 'backgroundRepeat', 'backgroundClip',
-      'backgroundOrigin', 'backgroundAttachment', 'backgroundBlendMode',
-      'opacity', 'isolation',
-      // Gradient
-      'backgroundGradient',
-    ],
-  },
-  {
-    section: 'Stroke',
-    props: [
-      'border', 'borderWidth', 'borderStyle', 'borderColor',
-      'borderTop', 'borderTopWidth', 'borderTopStyle', 'borderTopColor',
-      'borderRight', 'borderRightWidth', 'borderRightStyle', 'borderRightColor',
-      'borderBottom', 'borderBottomWidth', 'borderBottomStyle', 'borderBottomColor',
-      'borderLeft', 'borderLeftWidth', 'borderLeftStyle', 'borderLeftColor',
-      'borderRadius', 'borderTopLeftRadius', 'borderTopRightRadius',
-      'borderBottomRightRadius', 'borderBottomLeftRadius',
-      'borderImage', 'borderImageSource', 'borderImageSlice', 'borderImageWidth',
-      'borderCollapse', 'borderSpacing',
-      'outline', 'outlineWidth', 'outlineStyle', 'outlineColor', 'outlineOffset',
-      'boxShadow',
-    ],
-  },
-  {
-    section: 'Typography',
-    props: [
-      'color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'fontVariant',
-      'fontStretch', 'fontFeatureSettings', 'fontVariationSettings',
-      'lineHeight', 'letterSpacing', 'wordSpacing',
-      'textAlign', 'textAlignLast', 'textDecoration', 'textDecorationColor',
-      'textDecorationLine', 'textDecorationStyle', 'textDecorationThickness',
-      'textTransform', 'textIndent', 'textOverflow', 'textShadow',
-      'textUnderlineOffset', 'textUnderlinePosition',
-      'whiteSpace', 'wordBreak', 'wordWrap', 'overflowWrap', 'hyphens',
-      'verticalAlign', 'direction', 'unicodeBidi', 'writingMode',
-      'lineClamp', 'WebkitLineClamp',
-      // List
-      'listStyle', 'listStyleType', 'listStylePosition', 'listStyleImage',
-    ],
-  },
-  {
-    section: 'Effects',
-    props: [
-      'filter', 'backdropFilter', 'mixBlendMode',
-      'transform', 'transformOrigin', 'transformStyle', 'perspective', 'perspectiveOrigin',
-      'transition', 'transitionProperty', 'transitionDuration', 'transitionTimingFunction', 'transitionDelay',
-      'animation', 'animationName', 'animationDuration', 'animationTimingFunction',
-      'animationDelay', 'animationIterationCount', 'animationDirection',
-      'animationFillMode', 'animationPlayState',
-      'clipPath', 'mask', 'maskImage',
-    ],
-  },
-  {
-    section: 'Interaction',
-    props: [
-      'cursor', 'pointerEvents', 'userSelect', 'touchAction',
-      'resize', 'scrollBehavior', 'scrollSnapType', 'scrollSnapAlign',
-      'scrollMargin', 'scrollPadding',
-      'willChange', 'contain', 'contentVisibility',
-      'caretColor', 'accentColor', 'colorScheme', 'appearance',
-    ],
-  },
-  {
-    section: 'Table',
-    props: [
-      'tableLayout', 'captionSide', 'emptyCells',
-    ],
-  },
-  {
-    section: 'SVG',
-    props: [
-      'fill', 'fillOpacity', 'fillRule',
-      'stroke', 'strokeWidth', 'strokeLinecap', 'strokeLinejoin',
-      'strokeDasharray', 'strokeDashoffset', 'strokeOpacity',
-    ],
-  },
-  {
-    section: 'Breakpoints',
-    props: [
-      'breakpointSm', 'breakpointMd', 'breakpointLg', 'breakpointXl', 'breakpoint2xl',
-    ],
+    title: 'Shadow',
+    rows: [{ label: 'Box shadow', key: 'boxShadow' }],
   },
 ];
 
-// Extract ALL inline styles from component code using bracket-counting
+const STATES = ['default', 'hover', 'focus', 'active', 'disabled'] as const;
+type ElementState = (typeof STATES)[number];
+
 function extractCodeStyles(code: string): Record<string, string> {
   const styles: Record<string, string> = {};
   const marker = 'style={{';
@@ -147,8 +70,7 @@ function extractCodeStyles(code: string): Record<string, string> {
     const startIdx = code.indexOf(marker, searchFrom);
     if (startIdx === -1) break;
 
-    // Find matching }} using bracket counting
-    let depth = 2; // we're past the {{
+    let depth = 2;
     let i = startIdx + marker.length;
     let inStr: string | null = null;
 
@@ -166,15 +88,13 @@ function extractCodeStyles(code: string): Record<string, string> {
 
     const block = code.substring(startIdx + marker.length, i);
 
-    // Parse key: value pairs from the block
     const propRegex = /(\w+)\s*:\s*/g;
     let propMatch;
     while ((propMatch = propRegex.exec(block)) !== null) {
       const key = propMatch[1];
-      let valStart = propMatch.index + propMatch[0].length;
+      const valStart = propMatch.index + propMatch[0].length;
       let value = '';
 
-      // Read value: handle quoted strings, numbers, and expressions
       let vi = valStart;
       let vInStr: string | null = null;
       let vDepth = 0;
@@ -182,9 +102,7 @@ function extractCodeStyles(code: string): Record<string, string> {
       while (vi < block.length) {
         const vc = block[vi];
         if (vInStr) {
-          if (vc === vInStr && block[vi - 1] !== '\\') {
-            vInStr = null;
-          }
+          if (vc === vInStr && block[vi - 1] !== '\\') vInStr = null;
         } else {
           if (vc === "'" || vc === '"' || vc === '`') vInStr = vc;
           else if (vc === '(' || vc === '{' || vc === '[') vDepth++;
@@ -198,11 +116,9 @@ function extractCodeStyles(code: string): Record<string, string> {
       }
 
       value = block.substring(valStart, vi).trim();
-      // Strip quotes
       if ((value.startsWith("'") && value.endsWith("'")) || (value.startsWith('"') && value.endsWith('"'))) {
         value = value.slice(1, -1);
       }
-      // Skip ternary/complex expressions, keep simple values
       if (value && !value.includes('?') && !value.includes('=>') && key !== 'transition') {
         styles[key] = value;
       }
@@ -214,285 +130,206 @@ function extractCodeStyles(code: string): Record<string, string> {
   return styles;
 }
 
-export function StyleEditor({ tokens, code, onTokenChange }: StyleEditorProps) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set(['Fill', 'Spacing', 'Stroke', 'Typography']));
-  const [addingProp, setAddingProp] = useState<string | null>(null);
-  const [searchFilter, setSearchFilter] = useState('');
+function readField(values: Record<string, string>, key: string): string {
+  if (values[key] !== undefined) return values[key];
+  // Logical-property fallbacks for Padding X / Y
+  if (key === 'paddingInline') {
+    const l = values.paddingLeft, r = values.paddingRight;
+    if (l && l === r) return l;
+    return values.paddingInline ?? '';
+  }
+  if (key === 'paddingBlock') {
+    const t = values.paddingTop, b = values.paddingBottom;
+    if (t && t === b) return t;
+    return values.paddingBlock ?? '';
+  }
+  return '';
+}
 
-  // Merge: frontmatter tokens + code inline styles
-  const codeStyles = useMemo(() => code ? extractCodeStyles(code) : {}, [code]);
-  const allValues: Record<string, string> = useMemo(() => ({ ...codeStyles, ...tokens }), [codeStyles, tokens]);
+export function StyleEditor({ tokens, code, onTokenChange, onStateChange }: StyleEditorProps) {
+  const [state, setState] = useState<ElementState>('default');
 
-  const toggleSection = (section: string) => {
-    const next = new Set(expandedSections);
-    if (next.has(section)) next.delete(section);
-    else next.add(section);
-    setExpandedSections(next);
+  const pickState = (s: ElementState) => {
+    setState(s);
+    onStateChange?.(s);
   };
 
+  const codeStyles = useMemo(() => (code ? extractCodeStyles(code) : {}), [code]);
+  const allValues: Record<string, string> = useMemo(
+    () => ({ ...codeStyles, ...tokens }),
+    [codeStyles, tokens]
+  );
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', fontSize: 12 }}>
-      {/* Search */}
-      <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--color-border)' }}>
-        <input
-          type="text"
-          value={searchFilter}
-          onChange={(e) => setSearchFilter(e.target.value)}
-          placeholder="Filter properties..."
-          style={{
-            width: '100%',
-            height: 26,
-            padding: '0 8px',
-            fontSize: 11,
-            border: '1px solid var(--color-border)',
-            borderRadius: 4,
-            background: 'var(--color-stage)',
-            color: 'var(--color-fg)',
-          }}
-        />
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      <Section title="State">
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {STATES.map((s) => (
+            <StatePill key={s} active={state === s} onClick={() => pickState(s)}>
+              {s}
+            </StatePill>
+          ))}
+        </div>
+      </Section>
 
-      {/* Property Sections */}
-      {ALL_PROPERTIES.map(({ section, props }) => {
-        const isExpanded = expandedSections.has(section);
-        const filtered = searchFilter
-          ? props.filter(p => p.toLowerCase().includes(searchFilter.toLowerCase()))
-          : props;
-
-        // Properties that have values (from tokens or code)
-        const activeProps = filtered.filter(p => allValues[p] !== undefined);
-        const inactiveProps = filtered.filter(p => allValues[p] === undefined);
-
-        if (searchFilter && filtered.length === 0) return null;
-
-        return (
-          <div key={section} style={{ borderBottom: '1px solid var(--color-border)' }}>
-            {/* Section Header */}
-            <div
-              onClick={() => toggleSection(section)}
-              role="button"
-              tabIndex={0}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                width: '100%',
-                height: 34,
-                padding: '0 12px',
-                background: isExpanded ? 'rgba(0,0,0,0.02)' : 'transparent',
-                cursor: 'pointer',
-                userSelect: 'none',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.03)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = isExpanded ? 'rgba(0,0,0,0.02)' : 'transparent'; }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span style={{
-                  color: 'var(--color-fg-subtle)',
-                  transform: isExpanded ? 'rotate(90deg)' : 'rotate(0)',
-                  transition: 'transform 150ms ease',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                }}><ChevronRight size={10} /></span>
-                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-fg)' }}>{section}</span>
-              </div>
-              <span style={{ fontSize: 10, color: activeProps.length > 0 ? 'var(--color-primary)' : 'var(--color-fg-subtle)', fontWeight: 600 }}>
-                {activeProps.length > 0 ? activeProps.length : ''}
-              </span>
-            </div>
-
-            {/* Properties */}
-            {isExpanded && (
-              <div style={{ padding: '0 12px 8px' }}>
-                {/* Active properties (have values) */}
-                {activeProps.map(prop => (
-                  <PropertyRow
-                    key={prop}
-                    name={prop}
-                    value={allValues[prop]}
-                    isToken={tokens.hasOwnProperty(prop)}
-                    onChange={(v) => onTokenChange(prop, v)}
-                    onRemove={tokens.hasOwnProperty(prop) ? () => {
-                      const next = { ...tokens };
-                      delete next[prop];
-                      onTokenChange('__remove__' + prop, '');
-                    } : undefined}
-                  />
-                ))}
-
-                {/* Add property button */}
-                {addingProp === section ? (
-                  <div style={{ padding: '4px 0' }}>
-                    <select
-                      autoFocus
-                      onChange={(e) => {
-                        if (e.target.value) {
-                          onTokenChange(e.target.value, '');
-                          setAddingProp(null);
-                        }
-                      }}
-                      onBlur={() => setAddingProp(null)}
-                      style={{
-                        width: '100%',
-                        height: 26,
-                        padding: '0 4px',
-                        fontSize: 11,
-                        border: '1px solid var(--color-primary)',
-                        borderRadius: 4,
-                        background: '#ffffff',
-                        color: 'var(--color-fg)',
-                        fontFamily: 'var(--font-code)',
-                      }}
-                    >
-                      <option value="">Select property...</option>
-                      {inactiveProps.map(p => (
-                        <option key={p} value={p}>{camelToLabel(p)}</option>
-                      ))}
-                    </select>
+      {SECTIONS.map(({ title, rows }) => (
+        <Section key={title} title={title}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {rows.map((row, idx) => {
+              if (Array.isArray(row)) {
+                return (
+                  <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                    {row.map((field) => (
+                      <div key={field.key} style={{ minWidth: 0 }}>
+                        <Field
+                          label={field.label}
+                          value={readField(allValues, field.key)}
+                          onChange={(v) => onTokenChange(field.key, v)}
+                          propertyKey={field.key}
+                        />
+                      </div>
+                    ))}
                   </div>
-                ) : (
-                  <button
-                    onClick={() => setAddingProp(section)}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      height: 24,
-                      padding: '0 4px',
-                      background: 'transparent',
-                      border: 'none',
-                      cursor: 'pointer',
-                      fontSize: 11,
-                      color: 'var(--color-primary)',
-                      fontWeight: 500,
-                      marginTop: 2,
-                    }}
-                    onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,122,255,0.05)'; }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    + Add
-                  </button>
-                )}
-              </div>
-            )}
+                );
+              }
+              return (
+                <Field
+                  key={idx}
+                  label={row.label}
+                  value={readField(allValues, row.key)}
+                  onChange={(v) => onTokenChange(row.key, v)}
+                  propertyKey={row.key}
+                />
+              );
+            })}
           </div>
-        );
-      })}
+        </Section>
+      ))}
     </div>
   );
 }
 
-function PropertyRow({ name, value, isToken, onChange, onRemove }: {
-  name: string;
-  value: string;
-  isToken: boolean;
-  onChange: (v: string) => void;
-  onRemove?: () => void;
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{ padding: '10px 12px', borderBottom: '1px solid var(--color-border)' }}>
+      <div
+        style={{
+          fontSize: 10,
+          fontWeight: 600,
+          color: 'var(--color-fg-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: 0.6,
+          marginBottom: 8,
+        }}
+      >
+        {title}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function StatePill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
 }) {
-  const slot = detectTokenSlot(name, value);
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        height: 24,
+        padding: '0 9px',
+        background: active ? '#ffffff' : 'transparent',
+        border: active ? '1px solid var(--color-accent)' : '1px solid transparent',
+        boxShadow: active ? '0 0 0 2px rgba(0, 122, 255, 0.18)' : 'none',
+        borderRadius: 5,
+        fontSize: 11,
+        color: active ? 'var(--color-accent)' : 'var(--color-fg-muted)',
+        fontWeight: active ? 600 : 400,
+        cursor: 'pointer',
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function Field({
+  label,
+  value,
+  onChange,
+  propertyKey,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  propertyKey: string;
+}) {
+  const slot = detectTokenSlot(propertyKey, value);
   const isColor = slot === 'color';
   const colorVal = isColor ? (value.startsWith('var(') ? getComputedVar(value) : value) : null;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 28 }}>
-      {/* Color swatch */}
-      {isColor && (
-        <div style={{
-          width: 16, height: 16,
-          borderRadius: 3,
-          border: '1px solid var(--color-border)',
-          background: colorVal || 'transparent',
-          flexShrink: 0,
-        }} />
-      )}
-
-      {/* Property name */}
-      <span style={{
-        width: 90,
-        fontSize: 11,
-        color: isToken ? 'var(--color-primary)' : 'var(--color-fg-muted)',
-        fontWeight: isToken ? 500 : 400,
-        overflow: 'hidden',
-        textOverflow: 'ellipsis',
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-      }} title={name}>
-        {camelToLabel(name)}
-      </span>
-
-      {/* Value input */}
-      <input
-        type="text"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        readOnly={!isToken}
+    <div style={{ minWidth: 0 }}>
+      <div
         style={{
-          flex: 1,
-          minWidth: 0,
-          height: 22,
-          padding: '0 6px',
           fontSize: 11,
-          fontFamily: 'var(--font-code)',
-          border: '1px solid transparent',
-          borderRadius: 3,
-          background: isToken ? '#ffffff' : 'transparent',
-          color: 'var(--color-fg)',
+          color: 'var(--color-fg-muted)',
+          marginBottom: 3,
         }}
-        onFocus={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; }}
-        onBlur={(e) => { e.currentTarget.style.borderColor = 'transparent'; }}
-      />
-
-      {/* Token picker for token properties */}
-      {isToken && slot && (
-        <TokenPicker slot={slot} value={value} onPick={(v) => onChange(v)} />
-      )}
-
-      {/* Convert to token button for non-token properties */}
-      {!isToken && (
-        <button
-          onClick={() => onChange(value)}
-          title="Convert to editable token"
+      >
+        {label}
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, minWidth: 0 }}>
+        {isColor && (
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 3,
+              border: '1px solid var(--color-border)',
+              background: colorVal || 'transparent',
+              flexShrink: 0,
+            }}
+          />
+        )}
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="—"
           style={{
-            height: 20, padding: '0 6px',
-            background: 'transparent', border: '1px solid var(--color-border)',
-            borderRadius: 3, cursor: 'pointer',
-            fontSize: 9, color: 'var(--color-primary)', fontWeight: 600,
-            whiteSpace: 'nowrap', flexShrink: 0,
+            flex: 1,
+            minWidth: 0,
+            height: 24,
+            padding: '0 6px',
+            fontSize: 11,
+            fontFamily: value.startsWith('var(') ? 'var(--font-code)' : 'inherit',
+            border: '1px solid var(--color-border)',
+            borderRadius: 4,
+            background: '#ffffff',
+            color: 'var(--color-fg)',
+            outline: 'none',
+            boxSizing: 'border-box',
           }}
-        >
-          Tokenize
-        </button>
-      )}
-
-      {/* Remove button */}
-      {isToken && onRemove && (
-        <button
-          onClick={onRemove}
-          title="Remove property"
-          style={{
-            width: 20, height: 20,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            background: 'transparent',
-            border: 'none',
-            borderRadius: 3,
-            cursor: 'pointer',
-            color: 'var(--color-fg-subtle)',
-            fontSize: 14,
-            lineHeight: 1,
-            flexShrink: 0,
+          onFocus={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-accent)';
+            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.18)';
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-danger)'; e.currentTarget.style.background = 'rgba(255,59,48,0.08)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-fg-subtle)'; e.currentTarget.style.background = 'transparent'; }}
-        >
-          x
-        </button>
-      )}
+          onBlur={(e) => {
+            e.currentTarget.style.borderColor = 'var(--color-border)';
+            e.currentTarget.style.boxShadow = 'none';
+          }}
+        />
+        {slot && <TokenPicker slot={slot} value={value} onPick={(v) => onChange(v)} />}
+      </div>
     </div>
   );
-}
-
-function camelToLabel(s: string): string {
-  return s.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()).trim();
 }
 
 function getComputedVar(expr: string): string {
@@ -500,5 +337,7 @@ function getComputedVar(expr: string): string {
   if (!match) return expr;
   try {
     return getComputedStyle(document.documentElement).getPropertyValue(match[1]).trim() || expr;
-  } catch { return expr; }
+  } catch {
+    return expr;
+  }
 }

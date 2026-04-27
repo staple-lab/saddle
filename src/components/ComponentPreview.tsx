@@ -1,5 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef, useImperativeHandle, forwardRef } from 'react';
 import { Smartphone, Tablet, Monitor, MonitorSmartphone } from 'lucide-react';
+import { useTokens } from '../tokens/tokens';
 
 export type Breakpoint = { name: string; width: number };
 
@@ -25,12 +26,32 @@ function iconForBreakpoint(name: string, width: number) {
   return Monitor;
 }
 
+export type IframeNode = {
+  tag: string;
+  id?: string;
+  classes?: string[];
+  text?: string;
+  children: IframeNode[];
+};
+
+export type ComponentPreviewHandle = {
+  setElementStyles: (path: number[], styles: Record<string, string>) => void;
+  setElementState: (path: number[], state: string) => void;
+};
+
 interface ComponentPreviewProps {
   code: string;
   frontmatter?: any;
   liveTokens?: Record<string, string>;
   breakpoints?: Breakpoint[];
   devServerUrl?: string;
+  componentName?: string;
+  selectedPath?: number[] | null;
+  onTree?: (tree: IframeNode | null) => void;
+  onElementSelected?: (path: number[], styles: Record<string, string>) => void;
+  onBridgeChange?: (connected: boolean) => void;
+  onNewVariant?: () => void;
+  onCanvasClick?: () => void;
 }
 
 // Extract the JSX from a return(...) statement using bracket-counting
@@ -440,9 +461,121 @@ function resolveConditionalExpressions(html: string): string {
   return result;
 }
 
-export function ComponentPreview({ code, frontmatter, liveTokens, devServerUrl, breakpoints }: ComponentPreviewProps) {
+function slugify(s: string): string {
+  return s
+    .replace(/([a-z])([A-Z])/g, '$1-$2')
+    .replace(/[^a-zA-Z0-9]+/g, '-')
+    .toLowerCase()
+    .replace(/^-+|-+$/g, '');
+}
+
+export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPreviewProps>(function ComponentPreview({
+  code,
+  frontmatter,
+  liveTokens,
+  devServerUrl,
+  componentName,
+  breakpoints,
+  selectedPath,
+  onTree,
+  onElementSelected,
+  onBridgeChange,
+  onNewVariant,
+  onCanvasClick,
+}, ref) {
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const [bridgeConnected, setBridgeConnected] = useState(false);
+  const tokenStore = useTokens();
+
+  useImperativeHandle(ref, () => ({
+    setElementStyles(path, styles) {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: 'saddle:set-element-styles', path, styles },
+        '*'
+      );
+    },
+    setElementState(path, state) {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: 'saddle:set-element-state', path, state },
+        '*'
+      );
+    },
+  }), []);
+
+  // Push tokens to the iframe whenever they change (after the bridge is up).
+  useEffect(() => {
+    if (!iframeRef.current?.contentWindow || !bridgeConnected) return;
+    const tokens: Record<string, string> = {};
+    for (const g of tokenStore.semanticGroups) {
+      for (const t of g.tokens) {
+        tokens[`--${g.id}-${t.name}`] = t.value;
+      }
+    }
+    for (const slot of ['space', 'radius', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'] as const) {
+      for (const t of tokenStore[slot]) {
+        tokens[t.cssVar] = t.value;
+      }
+    }
+    iframeRef.current.contentWindow.postMessage({ type: 'saddle:set-tokens', tokens }, '*');
+  }, [tokenStore, bridgeConnected]);
+
+  const iframeUrl = useMemo(() => {
+    if (!devServerUrl) return '';
+    // Strip any existing fragment so we can append our own; keep query string.
+    const noHash = devServerUrl.replace(/#.*$/, '');
+    const [pathAndQuery] = [noHash];
+    const [path, existingQuery = ''] = pathAndQuery.split('?');
+    const cleanPath = path.replace(/\/+$/, '');
+    const params = new URLSearchParams(existingQuery);
+    params.set('embed', '1');
+    const query = params.toString();
+    const fragment = componentName ? `#${slugify(componentName)}` : '';
+    return `${cleanPath}/${query ? `?${query}` : ''}${fragment}`;
+  }, [devServerUrl, componentName]);
+
+  // Listen for bridge messages
+  useEffect(() => {
+    function onMessage(e: MessageEvent) {
+      const msg = e.data;
+      if (!msg || typeof msg !== 'object' || typeof msg.type !== 'string') return;
+      if (!msg.type.startsWith('saddle:')) return;
+      // Only accept messages from the iframe we own
+      if (iframeRef.current && e.source !== iframeRef.current.contentWindow) return;
+      switch (msg.type) {
+        case 'saddle:hello':
+          setBridgeConnected(true);
+          onBridgeChange?.(true);
+          break;
+        case 'saddle:tree':
+          setBridgeConnected(true);
+          onBridgeChange?.(true);
+          onTree?.(msg.tree ?? null);
+          break;
+        case 'saddle:element':
+          onElementSelected?.(msg.path ?? [], msg.styles ?? {});
+          break;
+      }
+    }
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [onTree, onElementSelected, onBridgeChange]);
+
+  // Reset bridge state when the URL changes
+  useEffect(() => {
+    setBridgeConnected(false);
+    onBridgeChange?.(false);
+  }, [iframeUrl, onBridgeChange]);
+
+  // Programmatic select → ask iframe to highlight + send styles
+  useEffect(() => {
+    if (!iframeRef.current?.contentWindow) return;
+    if (!selectedPath) {
+      iframeRef.current.contentWindow.postMessage({ type: 'saddle:clear-highlight' }, '*');
+      return;
+    }
+    iframeRef.current.contentWindow.postMessage({ type: 'saddle:select', path: selectedPath }, '*');
+  }, [selectedPath]);
   const tokens = liveTokens || frontmatter?.tokens || {};
-  const [mode, setMode] = useState<'isolated' | 'devserver'>(devServerUrl ? 'devserver' : 'isolated');
   const [breakpoint, setBreakpoint] = useState<number>(0);
   const [editingBreakpoints, setEditingBreakpoints] = useState(false);
   const [customBreakpoints, setCustomBreakpoints] = useState<Breakpoint[]>(breakpoints || DEFAULT_BREAKPOINTS);
@@ -549,11 +682,32 @@ export function ComponentPreview({ code, frontmatter, liveTokens, devServerUrl, 
           </button>
         </div>
 
-        {breakpoint > 0 && (
-          <span style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>
-            {breakpoint}px
-          </span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {breakpoint > 0 && (
+            <span style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>
+              {breakpoint}px
+            </span>
+          )}
+          {onNewVariant && (
+            <button
+              onClick={onNewVariant}
+              style={{
+                height: 26,
+                padding: '0 10px',
+                background: '#ffffff',
+                color: 'var(--color-fg)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 6,
+                fontSize: 12,
+                fontWeight: 500,
+                cursor: 'pointer',
+                boxShadow: 'var(--elevation-1)',
+              }}
+            >
+              + New Variant
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Breakpoint Configuration Panel */}
@@ -661,53 +815,59 @@ export function ComponentPreview({ code, frontmatter, liveTokens, devServerUrl, 
         </div>
       )}
 
-      {/* Mode Toggle */}
-      {devServerUrl && (
-        <div style={{
-          display: 'flex', gap: 4, padding: '8px 0', flexShrink: 0,
-        }}>
-          <button
-            onClick={() => setMode('isolated')}
-            style={{
-              height: 24, padding: '0 10px',
-              background: mode === 'isolated' ? 'var(--color-primary)' : '#fff',
-              color: mode === 'isolated' ? '#fff' : 'var(--color-fg)',
-              border: mode === 'isolated' ? 'none' : '1px solid var(--color-border)',
-              borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-            }}
-          >
-            Isolated
-          </button>
-          <button
-            onClick={() => setMode('devserver')}
-            style={{
-              height: 24, padding: '0 10px',
-              background: mode === 'devserver' ? 'var(--color-primary)' : '#fff',
-              color: mode === 'devserver' ? '#fff' : 'var(--color-fg)',
-              border: mode === 'devserver' ? 'none' : '1px solid var(--color-border)',
-              borderRadius: 4, fontSize: 11, fontWeight: 500, cursor: 'pointer',
-            }}
-          >
-            Dev Server
-          </button>
-          {mode === 'devserver' && (
-            <span style={{ fontSize: 11, color: 'var(--color-fg-muted)', alignSelf: 'center', marginLeft: 8 }}>
-              {devServerUrl}
-            </span>
-          )}
-        </div>
-      )}
 
       {/* Preview with breakpoint constraint */}
-      <div style={{
-        flex: 1, display: 'flex', justifyContent: 'center', minHeight: 0,
+      <div
+        onClick={(e) => {
+          // Click on the canvas background (not on the iframe or any descendant) deselects.
+          if (e.target === e.currentTarget) onCanvasClick?.();
+        }}
+        style={{
+        position: 'relative',
+        flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'stretch', minHeight: 0,
         background: breakpoint > 0 ? 'var(--color-stage)' : 'transparent',
         padding: breakpoint > 0 ? 8 : 0,
         transition: 'all 150ms',
       }}>
-        {mode === 'devserver' && devServerUrl ? (
+        {devServerUrl && bridgeConnected && (
+          <div
+            style={{
+              position: 'absolute',
+              bottom: 12,
+              left: 12,
+              zIndex: 5,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '4px 10px',
+              background: 'rgba(29, 29, 31, 0.85)',
+              color: '#ffffff',
+              borderRadius: 999,
+              fontSize: 11,
+              fontWeight: 500,
+              backdropFilter: 'blur(6px)',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+            }}
+          >
+            <kbd
+              style={{
+                fontFamily: 'inherit',
+                fontSize: 11,
+                padding: '0 4px',
+                borderRadius: 3,
+                background: 'rgba(255,255,255,0.18)',
+              }}
+            >⌘</kbd>
+            <span>+ click to edit style</span>
+          </div>
+        )}
+        {devServerUrl ? (
           <iframe
-            src={devServerUrl}
+            key={iframeUrl}
+            ref={iframeRef}
+            src={iframeUrl}
             style={{
               width: breakpoint > 0 ? breakpoint : '100%',
               maxWidth: '100%',
@@ -719,21 +879,30 @@ export function ComponentPreview({ code, frontmatter, liveTokens, devServerUrl, 
             title="Dev Server Preview"
           />
         ) : (
-          <iframe
-            srcDoc={isolatedSrcdoc}
+          <div
             style={{
-              width: breakpoint > 0 ? breakpoint : '100%',
-              maxWidth: '100%',
-              height: '100%',
-              border: '1px solid var(--color-border)',
-              borderRadius: 10, background: '#ffffff',
-              transition: 'width 200ms ease',
+              flex: 1,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '1px dashed var(--color-border)',
+              borderRadius: 10,
+              background: 'var(--color-stage)',
             }}
-            sandbox="allow-scripts"
-            title="Component Preview"
-          />
+          >
+            <div style={{ textAlign: 'center', maxWidth: 320, padding: 24 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-fg)', marginBottom: 6 }}>
+                No dev server connected
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--color-fg-muted)', lineHeight: 1.5 }}>
+                Open <strong>Settings</strong> and connect to your design system's dev server (e.g.
+                <code style={{ fontFamily: 'var(--font-code)', marginLeft: 4 }}>http://localhost:5173</code>
+                ) to render this component live.
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
   );
-}
+});

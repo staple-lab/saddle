@@ -8,14 +8,43 @@ pub struct FileInfo {
     pub is_dir: bool,
 }
 
+const SKIP_DIRS: &[&str] = &[
+    "node_modules",
+    "dist",
+    "build",
+    "out",
+    "target",
+    "coverage",
+    ".next",
+    ".nuxt",
+    ".turbo",
+    ".cache",
+    ".vercel",
+    ".parcel-cache",
+    ".svelte-kit",
+];
+
 pub fn scan_directory(path: &str) -> Result<Vec<FileInfo>, String> {
     let mut files = Vec::new();
 
-    for entry in WalkDir::new(path)
-        .max_depth(5)
-        .into_iter()
-        .filter_map(|e| e.ok())
-    {
+    let walker = WalkDir::new(path).max_depth(5).into_iter().filter_entry(|e| {
+        // Always include the root entry
+        if e.depth() == 0 {
+            return true;
+        }
+        let name = e.file_name().to_string_lossy();
+        // Skip hidden dirs/files (.git, .DS_Store, etc.)
+        if name.starts_with('.') {
+            return false;
+        }
+        // Skip known dependency/build output dirs
+        if e.file_type().is_dir() && SKIP_DIRS.contains(&name.as_ref()) {
+            return false;
+        }
+        true
+    });
+
+    for entry in walker.filter_map(|e| e.ok()) {
         let path_str = entry.path().to_string_lossy().to_string();
         let name = entry.file_name().to_string_lossy().to_string();
         let is_dir = entry.path().is_dir();

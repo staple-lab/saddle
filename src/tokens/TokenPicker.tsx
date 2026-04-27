@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { tokens, type TokenSlot } from './tokens';
+import { Diamond } from 'lucide-react';
+import { useTokens, type TokenSlot } from './tokens';
 
 type Props = {
   slot: TokenSlot;
@@ -22,7 +23,8 @@ export function TokenPicker({ slot, value, onPick }: Props) {
     return () => document.removeEventListener('mousedown', onDoc);
   }, [open]);
 
-  const items = tokens[slot] ?? [];
+  const allTokens = useTokens();
+  const items = allTokens[slot] ?? [];
   const currentToken = items.find((t) => `var(${t.cssVar})` === value);
 
   return (
@@ -30,21 +32,37 @@ export function TokenPicker({ slot, value, onPick }: Props) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
+        title={currentToken ? currentToken.name : 'Pick a token'}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
-          gap: 6,
-          padding: '4px 8px',
-          background: open ? '#eff6ff' : '#f8fafc',
-          color: 'var(--color-primary)',
-          border: '1px solid ' + (open ? 'var(--color-primary)' : 'var(--color-border)'),
-          borderRadius: '6px',
-          fontSize: 11,
+          gap: 3,
+          height: 24,
+          padding: currentToken ? '0 6px' : '0',
+          width: currentToken ? 'auto' : 24,
+          maxWidth: 80,
+          justifyContent: 'center',
+          background: open ? '#ffffff' : 'var(--color-stage)',
+          color: currentToken ? 'var(--color-accent)' : 'var(--color-fg)',
+          border: '1px solid ' + (open ? 'var(--color-accent)' : 'var(--color-border)'),
+          borderRadius: 4,
+          fontSize: 10,
+          fontWeight: 500,
           cursor: 'pointer',
           whiteSpace: 'nowrap',
+          flexShrink: 0,
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
         }}
       >
-        {currentToken ? currentToken.name : 'token'}
+        <Diamond
+          size={9}
+          fill="currentColor"
+          style={{ color: currentToken ? 'var(--color-accent)' : 'var(--color-fg-muted)', flexShrink: 0 }}
+        />
+        {currentToken && (
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentToken.name}</span>
+        )}
       </button>
       {open && (
         <div

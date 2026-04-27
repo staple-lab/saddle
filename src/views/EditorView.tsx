@@ -1,13 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Component } from '../types/component';
 import { CodeEditor } from '../components/CodeEditor';
 import { StyleEditor } from '../components/StyleEditor';
-import { ComponentPreview } from '../components/ComponentPreview';
+import { ComponentPreview, type ComponentPreviewHandle } from '../components/ComponentPreview';
 import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { ResizablePanel } from '../components/ResizablePanel';
-import { ElementTree } from '../components/ElementTree';
 import { updateTokens, createVariant } from '../lib/tauri';
-import { ChevronRight, ChevronLeft } from 'lucide-react';
 
 interface EditorViewProps {
   component: Component;
@@ -25,12 +23,12 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 export function EditorView({ component, devServerUrl }: EditorViewProps) {
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [selectedVariantIndex] = useState(0);
   const [tab, setTab] = useState<Tab>('style');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
-  const [selectedElementPath, setSelectedElementPath] = useState<string | null>(null);
+  const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
-  const [elementsCollapsed, setElementsCollapsed] = useState(false);
+  const previewRef = useRef<ComponentPreviewHandle | null>(null);
   const selectedVariant = component.variants[selectedVariantIndex];
 
   useEffect(() => {
@@ -39,6 +37,30 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
     setLocalTokens(t);
   }, [selectedVariantIndex]);
 
+  // camelCase → kebab-case so the visible value in the field matches what the bridge
+  // applies to the live element.
+  const toKebab = (s: string) => s.replace(/[A-Z]/g, (m) => '-' + m.toLowerCase());
+
+  const clearSelection = () => {
+    if (selectedElementPath) {
+      previewRef.current?.setElementState(selectedElementPath, 'default');
+    }
+    setSelectedElementPath(null);
+    setSelectedElementStyles(null);
+  };
+
+  // Esc to deselect the current element.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && selectedElementPath) {
+        clearSelection();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedElementPath]);
+
   const handleTokenChange = async (tokenName: string, value: string) => {
     // Handle removal
     if (tokenName.startsWith('__remove__')) {
@@ -46,6 +68,17 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
       const newTokens = { ...localTokens };
       delete newTokens[propToRemove];
       setLocalTokens(newTokens);
+      if (selectedElementPath) {
+        previewRef.current?.setElementStyles(selectedElementPath, { [propToRemove]: '' });
+        // Reflect the cleared value so the field reads empty.
+        setSelectedElementStyles((prev) => {
+          if (!prev) return prev;
+          const next = { ...prev };
+          delete next[propToRemove];
+          delete next[toKebab(propToRemove)];
+          return next;
+        });
+      }
       try {
         await updateTokens(selectedVariant.filePath, newTokens);
       } catch (err) {
@@ -55,11 +88,21 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
     }
 
     const newTokens = { ...localTokens, [tokenName]: value };
-    console.log('TOKEN CHANGE:', tokenName, '=', value, 'all tokens:', newTokens);
     setLocalTokens(newTokens);
+
+    if (selectedElementPath) {
+      previewRef.current?.setElementStyles(selectedElementPath, { [tokenName]: value });
+      // Mirror the edit into selectedElementStyles so the StyleEditor field shows the new value
+      // (it reads from selectedElementStyles when an element is selected).
+      setSelectedElementStyles((prev) => ({
+        ...(prev ?? {}),
+        [tokenName]: value,
+        [toKebab(tokenName)]: value,
+      }));
+    }
+
     try {
       await updateTokens(selectedVariant.filePath, newTokens);
-      console.log('SAVED to disk:', selectedVariant.filePath);
     } catch (err) {
       console.error('Failed to save tokens:', err);
     }
@@ -67,108 +110,28 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
 
   return (
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
-      {/* Left Panel - Element Tree */}
-      <div style={{
-        width: elementsCollapsed ? 28 : 260,
-        flexShrink: 0,
-        height: '100%',
-        display: 'flex',
-        flexDirection: 'column',
-        borderRight: '1px solid var(--color-border)',
-        background: '#ffffff',
-        transition: 'width 150ms ease',
-        overflow: 'hidden',
-      }}>
-        <header style={{
-          display: 'flex',
-          alignItems: 'center',
-          height: 40,
-          flexShrink: 0,
-          borderBottom: elementsCollapsed ? 'none' : '1px solid var(--color-border)',
-          padding: elementsCollapsed ? 0 : '0 8px 0 12px',
-          justifyContent: elementsCollapsed ? 'center' : 'space-between',
-        }}>
-          {!elementsCollapsed && (
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-fg)', whiteSpace: 'nowrap' }}>
-              Elements
-            </span>
-          )}
-          <button
-            onClick={() => setElementsCollapsed(!elementsCollapsed)}
-            title={elementsCollapsed ? 'Expand elements panel' : 'Collapse elements panel'}
-            style={{
-              width: 22,
-              height: 22,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'transparent',
-              border: 'none',
-              borderRadius: 4,
-              cursor: 'pointer',
-              color: 'var(--color-fg-muted)',
-              fontSize: 14,
-              flexShrink: 0,
-              transition: 'background 80ms',
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
-            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-          >
-            {elementsCollapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
-          </button>
-        </header>
-        {!elementsCollapsed && (
-          <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden' }}>
-            <ElementTree
-              code={selectedVariant.code}
-              tokens={localTokens}
-              onSelectElement={(styles, path) => {
-                setSelectedElementPath(path);
-                setSelectedElementStyles(styles);
-                setTab('style');
-              }}
-              selectedPath={selectedElementPath}
-            />
-          </div>
-        )}
-      </div>
 
       {/* Center Stage - Preview */}
-      <main style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)', overflow: 'hidden' }}>
-        {/* Variant bar */}
-        <div style={{
-          padding: '12px 20px',
-          borderBottom: '1px solid var(--color-border)',
-          background: '#ffffff',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexShrink: 0,
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {component.variants.map((variant, idx) => (
-              <button
-                key={idx}
-                onClick={() => setSelectedVariantIndex(idx)}
-                style={{
-                  height: 28,
-                  padding: '0 12px',
-                  background: idx === selectedVariantIndex ? 'var(--color-primary)' : '#ffffff',
-                  color: idx === selectedVariantIndex ? '#ffffff' : 'var(--color-fg)',
-                  border: idx === selectedVariantIndex ? 'none' : '1px solid var(--color-border)',
-                  borderRadius: 6,
-                  fontSize: 13,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  transition: 'all 100ms ease',
-                }}
-              >
-                {variant.variantName}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={async () => {
+      <main
+        onClick={(e) => { if (e.target === e.currentTarget) clearSelection(); }}
+        style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)', overflow: 'hidden' }}
+      >
+
+        {/* Preview */}
+        <div
+          onClick={(e) => { if (e.target === e.currentTarget) clearSelection(); }}
+          style={{ flex: 1, minHeight: 0, padding: 20, display: 'flex', flexDirection: 'column' }}
+        >
+          <ComponentPreview
+            ref={previewRef}
+            code={selectedVariant.code}
+            frontmatter={selectedVariant.frontmatter}
+            liveTokens={localTokens}
+            devServerUrl={devServerUrl}
+            componentName={component.name}
+            selectedPath={selectedElementPath}
+            onCanvasClick={clearSelection}
+            onNewVariant={async () => {
               const name = prompt('Variant name (e.g. Ghost, Outlined):');
               if (!name) return;
               try {
@@ -178,30 +141,24 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
                 alert(`Failed: ${err}`);
               }
             }}
-            style={{
-              height: 28, padding: '0 10px',
-              background: '#ffffff', color: 'var(--color-fg)',
-              border: '1px solid var(--color-border)', borderRadius: 6,
-              fontSize: 12, fontWeight: 500, cursor: 'pointer',
-              boxShadow: 'var(--elevation-1)',
+            onElementSelected={(path, styles) => {
+              // Bridge sends kebab-case (from getComputedStyle); StyleEditor uses camelCase.
+              // Store both forms so reads & edits both work.
+              const merged: Record<string, string> = {};
+              for (const [k, v] of Object.entries(styles)) {
+                merged[k] = v;
+                merged[k.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = v;
+              }
+              setSelectedElementPath(path);
+              setSelectedElementStyles(merged);
+              setTab('style');
             }}
-          >
-            + New Variant
-          </button>
-        </div>
-
-        {/* Preview */}
-        <div style={{ flex: 1, minHeight: 0, padding: 20, display: 'flex', flexDirection: 'column' }}>
-          <ComponentPreview
-            code={selectedVariant.code}
-            frontmatter={selectedVariant.frontmatter}
-            liveTokens={localTokens}
-            devServerUrl={devServerUrl}
           />
         </div>
       </main>
 
-      {/* Right Panel - Inspector (resizable) */}
+      {/* Right Panel - Inspector (resizable). Only shows when an element is selected. */}
+      {selectedElementPath && (
       <ResizablePanel defaultWidth={320} minWidth={240} maxWidth={520} side="right">
         {/* Tabs */}
         <header style={{
@@ -244,6 +201,11 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
               tokens={selectedElementStyles ?? localTokens}
               code={selectedVariant.code}
               onTokenChange={handleTokenChange}
+              onStateChange={(state) => {
+                if (selectedElementPath) {
+                  previewRef.current?.setElementState(selectedElementPath, state);
+                }
+              }}
             />
           )}
 
@@ -298,6 +260,7 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
           )}
         </div>
       </ResizablePanel>
+      )}
     </div>
   );
 }

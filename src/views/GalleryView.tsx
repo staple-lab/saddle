@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
-import { Sidebar, type AppView } from '../components/Sidebar';
+import { Sidebar, type AppView, type TokenGroup } from '../components/Sidebar';
+import { TopBar } from '../components/TopBar';
 import { ProjectSetupWizard } from '../components/ProjectSetupWizard';
 import { TerminalFeed, type LogEntry } from '../components/TerminalFeed';
 import { EditorView } from './EditorView';
 import { ExportView } from './ExportView';
 import { HierarchyView } from './HierarchyView';
 import { DashboardView } from './DashboardView';
+import { TokensView } from './TokensView';
 import { loadProject, loadGlobalConfig, watchProject } from '../lib/tauri';
 import { loadTokensFromConfig } from '../tokens/tokens';
 import { listen } from '@tauri-apps/api/event';
@@ -65,6 +67,8 @@ export function GalleryView() {
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [devServerUrl, setDevServerUrl] = useState<string>('');
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [tokenGroup, setTokenGroup] = useState<TokenGroup>('all');
 
   const addLog = (type: LogEntry['type'], message: string, source?: string) => {
     setLogs(prev => [...prev, { timestamp: new Date(), type, message, source }]);
@@ -135,20 +139,32 @@ export function GalleryView() {
     setProjectRoot('');
   };
 
-  // No project, no wizard - show landing
-  if (!project && !loading && !showWizard) {
-    return (
-      <>
-        <Sidebar
-          project={null}
-          onSelectComponent={() => {}}
-          selectedComponent={null}
-          onLoadProject={handleLoadProject}
-          onConfigure={() => {}}
-          onExport={() => {}}
-          view="components"
-          onViewChange={() => {}}
-        />
+  const renderMainContent = () => {
+    if (loading) {
+      return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+          <p style={{ fontSize: 13, color: 'var(--color-fg-muted)' }}>Loading project...</p>
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: 'var(--color-danger)' }}>Error</h2>
+            <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--color-fg-muted)' }}>{error}</p>
+            <button
+              onClick={handleLoadProject}
+              style={{ height: 34, padding: '0 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+    if (!project) {
+      return (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
           <div style={{ textAlign: 'center' }}>
             <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 600, color: 'var(--color-fg)' }}>Welcome to Saddle</h2>
@@ -172,44 +188,19 @@ export function GalleryView() {
             </button>
           </div>
         </div>
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: 'var(--color-danger)' }}>Error</h2>
-          <p style={{ margin: '0 0 16px', fontSize: 13, color: 'var(--color-fg-muted)' }}>{error}</p>
-          <button
-            onClick={handleLoadProject}
-            style={{ height: 34, padding: '0 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
-        <p style={{ fontSize: 13, color: 'var(--color-fg-muted)' }}>Loading project...</p>
-      </div>
-    );
-  }
-
-  const renderMainContent = () => {
-    if (view === 'export' && project) {
+      );
+    }
+    if (view === 'export') {
       return <ExportView project={project} projectRoot={projectRoot} onBack={() => setView('components')} />;
     }
-    if (view === 'hierarchy' && project) {
+    if (view === 'hierarchy') {
       return <HierarchyView project={project} projectRoot={projectRoot} onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }} />;
     }
-    if (view === 'dashboard' && project) {
-      return <DashboardView project={project} projectRoot={projectRoot} onDevServerConnect={(url) => { setDevServerUrl(url); addLog('success', `Connected to dev server: ${url}`, 'devserver'); }} />;
+    if (view === 'settings') {
+      return <DashboardView project={project} projectRoot={projectRoot} onLoadProject={handleLoadProject} onDevServerConnect={(url) => { setDevServerUrl(url); addLog('success', `Connected to dev server: ${url}`, 'devserver'); }} />;
+    }
+    if (view === 'tokens') {
+      return <TokensView groupFilter={tokenGroup} />;
     }
     if (selectedComponent) {
       return <EditorView component={selectedComponent} onBack={() => setSelectedComponent(null)} devServerUrl={devServerUrl || undefined} />;
@@ -225,7 +216,7 @@ export function GalleryView() {
   };
 
   return (
-    <>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
       {showWizard && (
         <ProjectSetupWizard
           projectRoot={projectRoot}
@@ -233,40 +224,50 @@ export function GalleryView() {
           onCancel={handleWizardCancel}
         />
       )}
-      <Sidebar
-        project={project}
-        onSelectComponent={(comp) => {
-          setSelectedComponent(comp);
-          setView('components');
-        }}
-        selectedComponent={selectedComponent}
-        onLoadProject={handleLoadProject}
-        onConfigure={() => setShowWizard(true)}
-        onExport={() => { setView('export'); setSelectedComponent(null); }}
-        view={view}
-        onViewChange={(v) => { setView(v); if (v !== 'components') setSelectedComponent(null); }}
-      />
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-        {/* Main Content */}
-        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-          {renderMainContent()}
-        </div>
-
-        {/* Terminal Feed (bottom panel) */}
-        <VerticalDivider
-          isOpen={terminalOpen}
-          onToggle={() => setTerminalOpen(!terminalOpen)}
-          logCount={logs.length}
-        />
-        {terminalOpen && (
-          <div style={{ height: 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-            <TerminalFeed
-              logs={logs}
-              onCommand={(cmd) => addLog('ai', `> ${cmd}`, 'user')}
-            />
-          </div>
+      <TopBar />
+      <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
+        {project && (
+          <Sidebar
+            project={project}
+            onSelectComponent={(comp) => {
+              setSelectedComponent(comp);
+              setView('components');
+            }}
+            selectedComponent={selectedComponent}
+            onLoadProject={handleLoadProject}
+            onConfigure={() => setShowWizard(true)}
+            onExport={() => { setView('export'); setSelectedComponent(null); }}
+            view={view}
+            onViewChange={(v) => { setView(v); if (v !== 'components') setSelectedComponent(null); }}
+            tokenGroup={tokenGroup}
+            onTokenGroupChange={setTokenGroup}
+            collapsed={sidebarCollapsed}
+            onToggleCollapsed={() => setSidebarCollapsed((c) => !c)}
+          />
         )}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            {renderMainContent()}
+          </div>
+          {project && (
+            <>
+              <VerticalDivider
+                isOpen={terminalOpen}
+                onToggle={() => setTerminalOpen(!terminalOpen)}
+                logCount={logs.length}
+              />
+              {terminalOpen && (
+                <div style={{ height: 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+                  <TerminalFeed
+                    logs={logs}
+                    onCommand={(cmd) => addLog('ai', `> ${cmd}`, 'user')}
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
-    </>
+    </div>
   );
 }

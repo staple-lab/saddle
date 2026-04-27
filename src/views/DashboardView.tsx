@@ -6,9 +6,10 @@ interface DashboardViewProps {
   project: ProjectStructure;
   projectRoot: string;
   onDevServerConnect?: (url: string) => void;
+  onLoadProject?: () => void;
 }
 
-export function DashboardView({ project, projectRoot, onDevServerConnect }: DashboardViewProps) {
+export function DashboardView({ project, projectRoot, onDevServerConnect, onLoadProject }: DashboardViewProps) {
   const [devServerUrl, setDevServerUrl] = useState('');
   const [devServerStatus, setDevServerStatus] = useState<'disconnected' | 'checking' | 'connected'>('disconnected');
   const [mcpStatus] = useState<'disconnected' | 'connected'>('disconnected');
@@ -51,27 +52,44 @@ export function DashboardView({ project, projectRoot, onDevServerConnect }: Dash
   });
 
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)' }}>
-      <header style={{
-        padding: '16px 20px',
-        borderBottom: '1px solid var(--color-border)',
-        background: '#ffffff',
-        flexShrink: 0,
-      }}>
-        <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--color-fg)' }}>Dashboard</h2>
-        <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--color-fg-muted)' }}>
-          {projectRoot.split('/').pop()} - Project settings and integrations
-        </p>
-      </header>
-
-      <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
-        <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ flex: 1, overflowY: 'auto', background: 'var(--color-stage)' }}>
+      <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 32px 64px' }}>
+        <header style={{ marginBottom: 24 }}>
+          <h1 style={{ margin: '0 0 6px', fontSize: 22, fontWeight: 600, color: 'var(--color-fg)' }}>Settings</h1>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--color-fg-muted)' }}>
+            {projectRoot.split('/').pop()} — Project, dev server, and integrations
+          </p>
+        </header>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Project Info */}
           <Card title="Project">
             <Row label="Root" value={projectRoot} mono />
             <Row label="Components" value={`${project.components.length}`} />
             <Row label="Total Variants" value={`${project.components.reduce((acc, c) => acc + c.variants.length, 0)}`} />
+            {onLoadProject && (
+              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                <button
+                  onClick={onLoadProject}
+                  style={{
+                    height: 30,
+                    padding: '0 14px',
+                    background: 'var(--color-primary)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: 6,
+                    fontSize: 13,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    boxShadow: 'var(--elevation-1)',
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-primary-press)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-primary)'; }}
+                >
+                  Load Different Project
+                </button>
+              </div>
+            )}
           </Card>
 
           {/* Dev Server */}
