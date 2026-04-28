@@ -204,9 +204,34 @@ export function GalleryView() {
     if (!project) {
       return (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ textAlign: 'center', maxWidth: 440 }}>
             <h2 style={{ margin: '0 0 8px', fontSize: 20, fontWeight: 600, color: 'var(--color-fg)' }}>Welcome to Saddle</h2>
-            <p style={{ margin: '0 0 20px', fontSize: 13, color: 'var(--color-fg-muted)' }}>Load a component library to get started</p>
+            <p style={{ margin: '0 0 24px', fontSize: 13, color: 'var(--color-fg-muted)' }}>Load a component library to get started</p>
+
+            <div style={{
+              textAlign: 'left',
+              padding: 16,
+              marginBottom: 24,
+              background: 'var(--color-surface, #1d1d1f)',
+              border: '1px solid var(--color-border, #3a3a3c)',
+              borderRadius: 8,
+              fontSize: 12,
+              color: 'var(--color-fg-muted)',
+              lineHeight: 1.6,
+            }}>
+              <div style={{ fontWeight: 600, color: 'var(--color-fg)', marginBottom: 8, fontSize: 13 }}>
+                For Saddle to auto-spawn its dev server, your project needs:
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                <li><code style={{ fontFamily: 'ui-monospace, monospace' }}>vite</code> in <code style={{ fontFamily: 'ui-monospace, monospace' }}>package.json</code> (devDependencies or dependencies)</li>
+                <li>A stories file at one of: <code style={{ fontFamily: 'ui-monospace, monospace' }}>demo/stories.tsx</code>, <code style={{ fontFamily: 'ui-monospace, monospace' }}>**/*.stories.tsx</code>, or <code style={{ fontFamily: 'ui-monospace, monospace' }}>demo/App.tsx</code> (with hash routing)</li>
+                <li>Node on your PATH</li>
+              </ul>
+              <div style={{ marginTop: 10, fontSize: 11, color: 'var(--color-fg-muted)' }}>
+                Without these, Saddle falls back to manual mode — paste your own dev server URL.
+              </div>
+            </div>
+
             <button
               onClick={handleLoadProject}
               style={{
