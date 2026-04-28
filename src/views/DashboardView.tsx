@@ -2,48 +2,50 @@ import { useState } from 'react';
 import type { ProjectStructure } from '../types/component';
 import { writeComponentFile } from '../lib/tauri';
 
+export type DevServerStatus =
+  | { kind: 'idle' }
+  | { kind: 'spawning' }
+  | { kind: 'live'; url: string }
+  | { kind: 'failed'; error: string }
+  | { kind: 'manual' };
+
 interface DashboardViewProps {
   project: ProjectStructure;
   projectRoot: string;
   onDevServerConnect?: (url: string) => void;
   onLoadProject?: () => void;
+  devServerStatus: DevServerStatus;
+  onRetryDevServer?: () => void;
 }
 
-export function DashboardView({ project, projectRoot, onDevServerConnect, onLoadProject }: DashboardViewProps) {
+export function DashboardView({ project, projectRoot, onDevServerConnect, onLoadProject, devServerStatus, onRetryDevServer }: DashboardViewProps) {
   const [devServerUrl, setDevServerUrl] = useState('');
-  const [devServerStatus, setDevServerStatus] = useState<'disconnected' | 'checking' | 'connected'>('disconnected');
+  const [, setManualCheckStatus] = useState<'disconnected' | 'checking' | 'connected'>('disconnected');
   const [mcpStatus] = useState<'disconnected' | 'connected'>('disconnected');
 
   const checkDevServer = async (url: string) => {
     if (!url) return;
-    setDevServerStatus('checking');
+    setManualCheckStatus('checking');
     try {
       await fetch(url, { mode: 'no-cors' });
-      setDevServerStatus('connected');
+      setManualCheckStatus('connected');
       onDevServerConnect?.(url);
     } catch {
-      setDevServerStatus('disconnected');
+      setManualCheckStatus('disconnected');
     }
   };
 
-  const commonPorts = [3000, 5173, 8080, 4200, 3001];
+  const statusDot = (kind: DevServerStatus['kind']) => ({
+    width: 10, height: 10, borderRadius: '50%',
+    background:
+      kind === 'live' ? 'var(--color-success)' :
+      kind === 'spawning' ? 'var(--color-warning)' :
+      kind === 'failed' ? 'var(--color-danger)' :
+      'var(--color-fg-subtle)',
+    flexShrink: 0,
+  });
 
-  const autoDetect = async () => {
-    setDevServerStatus('checking');
-    for (const port of commonPorts) {
-      try {
-        await fetch(`http://localhost:${port}`, { mode: 'no-cors' });
-        const url = `http://localhost:${port}`;
-        setDevServerUrl(url);
-        setDevServerStatus('connected');
-        onDevServerConnect?.(url);
-        return;
-      } catch {}
-    }
-    setDevServerStatus('disconnected');
-  };
-
-  const statusDot = (status: string) => ({
+  const mcpDot = (status: string): React.CSSProperties => ({
     width: 8,
     height: 8,
     borderRadius: '50%',
@@ -94,64 +96,64 @@ export function DashboardView({ project, projectRoot, onDevServerConnect, onLoad
 
           {/* Dev Server */}
           <Card title="Dev Server">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <div style={statusDot(devServerStatus)} />
-              <span style={{ fontSize: 13, color: 'var(--color-fg)' }}>
-                {devServerStatus === 'connected' ? 'Connected' : devServerStatus === 'checking' ? 'Checking...' : 'Disconnected'}
-              </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={statusDot(devServerStatus.kind)} />
+              <div style={{ fontSize: 13, color: 'var(--color-fg)' }}>
+                {devServerStatus.kind === 'spawning' && 'Spawning Vite…'}
+                {devServerStatus.kind === 'live' && (
+                  <>Live · <code style={{ fontFamily: 'var(--font-code)' }}>{devServerStatus.url}</code></>
+                )}
+                {devServerStatus.kind === 'failed' && (
+                  <>Failed: <span style={{ color: 'var(--color-fg-muted)' }}>{devServerStatus.error}</span></>
+                )}
+                {devServerStatus.kind === 'manual' && 'Connect to your own dev server'}
+                {devServerStatus.kind === 'idle' && 'Not started'}
+              </div>
+              {(devServerStatus.kind === 'failed' || devServerStatus.kind === 'idle') && onRetryDevServer && (
+                <button
+                  onClick={onRetryDevServer}
+                  style={{
+                    height: 26, padding: '0 10px',
+                    background: 'var(--color-fg)', color: '#fff',
+                    border: 'none', borderRadius: 6,
+                    fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                  }}
+                >
+                  Retry
+                </button>
+              )}
             </div>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input
-                type="text"
-                value={devServerUrl}
-                onChange={(e) => setDevServerUrl(e.target.value)}
-                placeholder="http://localhost:5173"
-                style={{
-                  flex: 1,
-                  height: 28,
-                  padding: '0 8px',
-                  fontSize: 12,
-                  fontFamily: 'var(--font-code)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 6,
-                  background: '#ffffff',
-                  color: 'var(--color-fg)',
-                }}
-              />
-              <button
-                onClick={() => checkDevServer(devServerUrl)}
-                style={{
-                  height: 28,
-                  padding: '0 12px',
-                  background: '#ffffff',
-                  color: 'var(--color-fg)',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  boxShadow: 'var(--elevation-1)',
-                }}
-              >
-                Connect
-              </button>
-              <button
-                onClick={autoDetect}
-                style={{
-                  height: 28,
-                  padding: '0 12px',
-                  background: 'var(--color-primary)',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: 6,
-                  fontSize: 12,
-                  fontWeight: 500,
-                  cursor: 'pointer',
-                  boxShadow: 'var(--elevation-1)',
-                }}
-              >
-                Auto-detect
-              </button>
+
+            {/* Manual fallback toggle + URL input. Always available. */}
+            <div style={{ borderTop: '1px solid var(--color-border)', paddingTop: 12 }}>
+              <div style={{ fontSize: 12, color: 'var(--color-fg-muted)', marginBottom: 6 }}>
+                Or connect to a server you started yourself:
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <input
+                  type="text"
+                  value={devServerUrl}
+                  onChange={(e) => setDevServerUrl(e.target.value)}
+                  placeholder="http://localhost:5173"
+                  style={{
+                    flex: 1, height: 28, padding: '0 8px',
+                    fontSize: 12, fontFamily: 'var(--font-code)',
+                    border: '1px solid var(--color-border)', borderRadius: 6,
+                    background: '#fff', color: 'var(--color-fg)', outline: 'none',
+                  }}
+                />
+                <button
+                  onClick={() => checkDevServer(devServerUrl)}
+                  style={{
+                    height: 28, padding: '0 12px',
+                    background: 'transparent', color: 'var(--color-fg)',
+                    border: '1px solid var(--color-border)', borderRadius: 6,
+                    fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                  }}
+                >
+                  Connect
+                </button>
+              </div>
             </div>
           </Card>
 
@@ -159,7 +161,7 @@ export function DashboardView({ project, projectRoot, onDevServerConnect, onLoad
           <MCPSetupCard
             projectRoot={projectRoot}
             mcpStatus={mcpStatus}
-            statusDot={statusDot}
+            statusDot={mcpDot}
           />
 
           {/* Token Stats */}

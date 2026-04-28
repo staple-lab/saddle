@@ -22,6 +22,14 @@ export async function writeSaddleRuntime(projectRoot: string, viteConfigPath: st
   return invoke<void>('write_saddle_runtime_files', { projectRoot, viteConfigPath });
 }
 
+export async function spawnDevServer(projectRoot: string): Promise<string> {
+  return invoke<string>('spawn_dev_server', { projectRoot });
+}
+
+export async function killDevServer(): Promise<void> {
+  return invoke<void>('kill_dev_server');
+}
+
 export interface ParsedFile {
   frontmatter: any;
   code: string;

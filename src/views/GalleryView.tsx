@@ -197,7 +197,7 @@ export function GalleryView() {
       return <HierarchyView project={project} projectRoot={projectRoot} onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }} />;
     }
     if (view === 'settings') {
-      return <DashboardView project={project} projectRoot={projectRoot} onLoadProject={handleLoadProject} onDevServerConnect={(url) => { setDevServerUrl(url); addLog('success', `Connected to dev server: ${url}`, 'devserver'); }} />;
+      return <DashboardView project={project} projectRoot={projectRoot} onLoadProject={handleLoadProject} onDevServerConnect={(url) => { setDevServerUrl(url); addLog('success', `Connected to dev server: ${url}`, 'devserver'); }} devServerStatus={{ kind: 'idle' }} onRetryDevServer={() => {}} />;
     }
     if (view === 'tokens') {
       return <TokensView groupFilter={tokenGroup} />;
