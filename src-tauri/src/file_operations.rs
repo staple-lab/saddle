@@ -126,7 +126,13 @@ pub fn detect_vite_setup(project_root: &str) -> Result<ViteSetup, String> {
     let pkg_path = root.join("package.json");
 
     let pkg_json: serde_json::Value = match std::fs::read_to_string(&pkg_path) {
-        Ok(s) => serde_json::from_str(&s).map_err(|e| format!("package.json parse: {e}"))?,
+        Ok(s) => match serde_json::from_str(&s) {
+            Ok(v) => v,
+            Err(_) => {
+                // Malformed package.json: same outcome as no package.json.
+                return Ok(ViteSetup { has_vite: false, vite_config_path: None, stories_path: None, dev_script: None });
+            }
+        },
         Err(_) => {
             return Ok(ViteSetup { has_vite: false, vite_config_path: None, stories_path: None, dev_script: None });
         }
@@ -161,8 +167,8 @@ fn find_stories_file(root: &std::path::Path) -> Option<String> {
     if demo_stories.exists() {
         return Some(demo_stories.to_string_lossy().into_owned());
     }
-    // Priority 2: any *.stories.tsx (depth-limited walk to skip node_modules etc.)
-    for entry in walkdir::WalkDir::new(root)
+    // Priority 2: any *.stories.tsx — sorted by path so the choice is deterministic
+    let mut matches: Vec<String> = walkdir::WalkDir::new(root)
         .max_depth(5)
         .into_iter()
         .filter_entry(|e| {
@@ -171,11 +177,12 @@ fn find_stories_file(root: &std::path::Path) -> Option<String> {
             !(name.starts_with('.') || name == "node_modules" || name == "dist" || name == "build")
         })
         .filter_map(|e| e.ok())
-    {
-        let name = entry.file_name().to_string_lossy();
-        if name.ends_with(".stories.tsx") {
-            return Some(entry.path().to_string_lossy().into_owned());
-        }
+        .filter(|e| e.file_name().to_string_lossy().ends_with(".stories.tsx"))
+        .map(|e| e.path().to_string_lossy().into_owned())
+        .collect();
+    matches.sort();
+    if let Some(first) = matches.into_iter().next() {
+        return Some(first);
     }
     // Priority 3: demo/App.tsx (assumed to handle hash routing)
     let demo_app = root.join("demo/App.tsx");
@@ -231,5 +238,28 @@ mod tests {
         write(tmp.path(), "src/Button.stories.tsx", "");
         let setup = detect_vite_setup(tmp.path().to_str().unwrap()).unwrap();
         assert!(setup.stories_path.unwrap().ends_with("Button.stories.tsx"));
+    }
+
+    #[test]
+    fn malformed_package_json_returns_no_vite() {
+        let tmp = TempDir::new().unwrap();
+        write(tmp.path(), "package.json", "{ this is not valid json");
+        let setup = detect_vite_setup(tmp.path().to_str().unwrap()).unwrap();
+        assert!(!setup.has_vite);
+        assert!(setup.vite_config_path.is_none());
+    }
+
+    #[test]
+    fn stories_glob_picks_alphabetically_first() {
+        let tmp = TempDir::new().unwrap();
+        write(tmp.path(), "package.json", r#"{ "devDependencies": { "vite": "^5" } }"#);
+        write(tmp.path(), "src/Card.stories.tsx", "");
+        write(tmp.path(), "src/Button.stories.tsx", "");
+        let setup = detect_vite_setup(tmp.path().to_str().unwrap()).unwrap();
+        let stories = setup.stories_path.unwrap();
+        assert!(
+            stories.ends_with("Button.stories.tsx"),
+            "expected Button to win sort, got: {stories}"
+        );
     }
 }
