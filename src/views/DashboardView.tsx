@@ -20,7 +20,7 @@ interface DashboardViewProps {
 
 export function DashboardView({ project, projectRoot, onDevServerConnect, onLoadProject, devServerStatus, onRetryDevServer }: DashboardViewProps) {
   const [devServerUrl, setDevServerUrl] = useState('');
-  const [, setManualCheckStatus] = useState<'disconnected' | 'checking' | 'connected'>('disconnected');
+  const [manualCheckStatus, setManualCheckStatus] = useState<'idle' | 'checking' | 'connected' | 'failed'>('idle');
   const [mcpStatus] = useState<'disconnected' | 'connected'>('disconnected');
 
   const checkDevServer = async (url: string) => {
@@ -31,7 +31,7 @@ export function DashboardView({ project, projectRoot, onDevServerConnect, onLoad
       setManualCheckStatus('connected');
       onDevServerConnect?.(url);
     } catch {
-      setManualCheckStatus('disconnected');
+      setManualCheckStatus('failed');
     }
   };
 
@@ -98,7 +98,11 @@ export function DashboardView({ project, projectRoot, onDevServerConnect, onLoad
           <Card title="Dev Server">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
               <div style={statusDot(devServerStatus.kind)} />
-              <div style={{ fontSize: 13, color: 'var(--color-fg)' }}>
+              <div
+                role="status"
+                aria-live="polite"
+                style={{ fontSize: 13, color: 'var(--color-fg)' }}
+              >
                 {devServerStatus.kind === 'spawning' && 'Spawning Vite…'}
                 {devServerStatus.kind === 'live' && (
                   <>Live · <code style={{ fontFamily: 'var(--font-code)' }}>{devServerStatus.url}</code></>
@@ -153,6 +157,22 @@ export function DashboardView({ project, projectRoot, onDevServerConnect, onLoad
                 >
                   Connect
                 </button>
+                {manualCheckStatus !== 'idle' && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      color:
+                        manualCheckStatus === 'connected' ? 'var(--color-success)' :
+                        manualCheckStatus === 'failed' ? 'var(--color-danger)' :
+                        'var(--color-fg-muted)',
+                      alignSelf: 'center',
+                    }}
+                  >
+                    {manualCheckStatus === 'checking' && 'Checking…'}
+                    {manualCheckStatus === 'connected' && 'Connected'}
+                    {manualCheckStatus === 'failed' && 'Could not reach that URL'}
+                  </div>
+                )}
               </div>
             </div>
           </Card>
