@@ -6,6 +6,7 @@ mod mcp_server;
 mod css_generator;
 mod dedup_analyzer;
 mod file_watcher;
+mod saddle_runtime;
 
 use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo, detect_vite_setup, ViteSetup};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
@@ -28,6 +29,11 @@ fn scan_project_directory(path: String) -> Result<Vec<FileInfo>, String> {
 #[tauri::command]
 fn detect_vite(project_root: String) -> Result<ViteSetup, String> {
     detect_vite_setup(&project_root)
+}
+
+#[tauri::command]
+fn write_saddle_runtime_files(project_root: String, vite_config_path: Option<String>) -> Result<(), String> {
+    saddle_runtime::write_saddle_runtime(&project_root, vite_config_path.as_deref())
 }
 
 #[tauri::command]
@@ -214,6 +220,7 @@ pub fn run() {
             greet,
             scan_project_directory,
             detect_vite,
+            write_saddle_runtime_files,
             read_component_file,
             parse_component_file,
             update_tokens,

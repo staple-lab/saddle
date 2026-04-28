@@ -18,6 +18,10 @@ export async function detectViteSetup(projectRoot: string): Promise<ViteSetup> {
   return invoke<ViteSetup>('detect_vite', { projectRoot });
 }
 
+export async function writeSaddleRuntime(projectRoot: string, viteConfigPath: string | null): Promise<void> {
+  return invoke<void>('write_saddle_runtime_files', { projectRoot, viteConfigPath });
+}
+
 export interface ParsedFile {
   frontmatter: any;
   code: string;
