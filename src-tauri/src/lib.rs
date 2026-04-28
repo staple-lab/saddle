@@ -7,6 +7,7 @@ mod css_generator;
 mod dedup_analyzer;
 mod file_watcher;
 mod saddle_runtime;
+mod dev_server;
 
 use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo, detect_vite_setup, ViteSetup};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
@@ -116,6 +117,17 @@ fn analyze_structure(components_json: String) -> Result<Vec<StructureDuplicate>,
 #[tauri::command]
 fn watch_project(app_handle: tauri::AppHandle, project_root: String) -> Result<(), String> {
     start_watching(app_handle, project_root)
+}
+
+#[tauri::command]
+async fn spawn_dev_server(project_root: String) -> Result<String, String> {
+    dev_server::spawn_vite(&project_root).await
+}
+
+#[tauri::command]
+async fn kill_dev_server() -> Result<(), String> {
+    dev_server::kill_current().await;
+    Ok(())
 }
 
 #[tauri::command]
@@ -233,8 +245,18 @@ pub fn run() {
             analyze_duplicates,
             analyze_structure,
             build_package,
-            watch_project
+            watch_project,
+            spawn_dev_server,
+            kill_dev_server
         ])
+        .on_window_event(|_window, event| {
+            if let tauri::WindowEvent::CloseRequested { .. } = event {
+                // Block briefly to give the child a chance to die cleanly.
+                tauri::async_runtime::block_on(async {
+                    dev_server::kill_current().await;
+                });
+            }
+        })
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
