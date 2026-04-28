@@ -251,9 +251,11 @@ pub fn run() {
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } = event {
-                // Block briefly to give the child a chance to die cleanly.
                 tauri::async_runtime::block_on(async {
-                    dev_server::kill_current().await;
+                    let _ = tokio::time::timeout(
+                        std::time::Duration::from_secs(2),
+                        dev_server::kill_current(),
+                    ).await;
                 });
             }
         })
