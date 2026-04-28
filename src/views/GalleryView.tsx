@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { Sidebar, type AppView, type TokenGroup } from '../components/Sidebar';
 import { TopBar } from '../components/TopBar';
@@ -75,6 +75,14 @@ export function GalleryView() {
   const addLog = (type: LogEntry['type'], message: string, source?: string) => {
     setLogs(prev => [...prev, { timestamp: new Date(), type, message, source }]);
   };
+
+  useEffect(() => {
+    const unlisten = listen('dev-server-exited', () => {
+      setDevServerStatus({ kind: 'failed', error: 'Vite child process exited unexpectedly' });
+      setLogs(prev => [...prev, { timestamp: new Date(), type: 'error', message: 'Vite child process exited', source: 'devserver' }]);
+    });
+    return () => { unlisten.then(fn => fn()); };
+  }, []);
 
   const startSaddleManagedVite = async (root: string) => {
     setDevServerStatus({ kind: 'spawning' });

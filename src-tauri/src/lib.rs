@@ -120,8 +120,16 @@ fn watch_project(app_handle: tauri::AppHandle, project_root: String) -> Result<(
 }
 
 #[tauri::command]
-async fn spawn_dev_server(project_root: String) -> Result<String, String> {
-    dev_server::spawn_vite(&project_root).await
+async fn spawn_dev_server(app: tauri::AppHandle, project_root: String) -> Result<String, String> {
+    use tauri::Emitter;
+    let url = dev_server::spawn_vite(&project_root).await?;
+    let app_clone = app.clone();
+    tauri::async_runtime::spawn(async move {
+        if dev_server::await_child_exit().await {
+            let _ = app_clone.emit("dev-server-exited", ());
+        }
+    });
+    Ok(url)
 }
 
 #[tauri::command]
@@ -250,15 +258,15 @@ pub fn run() {
             kill_dev_server
         ])
         .on_window_event(|_window, event| {
-            if let tauri::WindowEvent::CloseRequested { .. } = event {
-                tauri::async_runtime::block_on(async {
-                    let _ = tokio::time::timeout(
-                        std::time::Duration::from_secs(2),
-                        dev_server::kill_current(),
-                    ).await;
-                });
+            if let tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed = event {
+                dev_server::kill_current_sync();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app_handle, event| {
+            if let tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit = event {
+                dev_server::kill_current_sync();
+            }
+        });
 }

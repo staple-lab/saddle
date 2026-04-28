@@ -1,9 +1,15 @@
 use std::process::Stdio;
+use std::sync::atomic::{AtomicU32, Ordering};
 use once_cell::sync::Lazy;
 use regex::Regex;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::{Child, Command};
 use tokio::sync::Mutex;
+
+/// PID of the currently-tracked Vite child, mirrored from `CURRENT_CHILD` for
+/// synchronous access from the Tauri exit hook (where we can't await the async
+/// mutex). 0 means no child is running.
+static CURRENT_PID: AtomicU32 = AtomicU32::new(0);
 
 /// Currently-running Vite child process. Replaced on each successful spawn,
 /// cleared by `kill_current`.
@@ -74,6 +80,7 @@ pub async fn spawn_vite(project_root: &str) -> Result<String, String> {
 
     match url {
         Some(u) => {
+            CURRENT_PID.store(child.id().unwrap_or(0), Ordering::SeqCst);
             *CURRENT_CHILD.lock().await = Some(child);
             Ok(u)
         }
@@ -97,6 +104,61 @@ pub async fn kill_current() {
     let mut guard = CURRENT_CHILD.lock().await;
     if let Some(mut child) = guard.take() {
         let _ = child.kill().await;
+    }
+    CURRENT_PID.store(0, Ordering::SeqCst);
+}
+
+/// Synchronously send SIGTERM to the tracked child, by PID. Used from the
+/// Tauri exit hook on macOS, where we can't await the async mutex (the runtime
+/// is being torn down). No-op if no child is tracked.
+#[cfg(unix)]
+pub fn kill_current_sync() {
+    let pid = CURRENT_PID.swap(0, Ordering::SeqCst);
+    if pid == 0 { return; }
+    // SAFETY: `kill` with a positive pid and SIGTERM is safe; worst case is
+    // ESRCH (child already exited).
+    unsafe { libc::kill(pid as i32, libc::SIGTERM); }
+}
+
+#[cfg(not(unix))]
+pub fn kill_current_sync() {
+    // On non-unix platforms, fall back to a no-op; `kill_on_drop(true)` on the
+    // tokio Child should still clean up if the runtime tears down cleanly.
+    CURRENT_PID.store(0, Ordering::SeqCst);
+}
+
+/// Polls `CURRENT_CHILD` until the child stored at call time exits on its own,
+/// is replaced by a newer spawn, or is killed via `kill_current`. Returns
+/// `true` only when the child died unexpectedly (so the caller can notify the
+/// frontend); returns `false` when the child was replaced or killed cleanly,
+/// in which case no notification is needed.
+pub async fn await_child_exit() -> bool {
+    let initial_pid = match CURRENT_CHILD.lock().await.as_ref() {
+        Some(c) => match c.id() {
+            Some(p) => p,
+            None => return false,
+        },
+        None => return false,
+    };
+    loop {
+        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+        let mut guard = CURRENT_CHILD.lock().await;
+        match guard.as_mut() {
+            None => return false, // killed externally via kill_current
+            Some(child) => {
+                if child.id() != Some(initial_pid) {
+                    return false; // replaced by a newer spawn
+                }
+                match child.try_wait() {
+                    Ok(Some(_status)) => {
+                        *guard = None;
+                        return true; // died on its own
+                    }
+                    Ok(None) => continue,
+                    Err(_) => return false,
+                }
+            }
+        }
     }
 }
 
