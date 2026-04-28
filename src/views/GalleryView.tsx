@@ -9,7 +9,8 @@ import { ExportView } from './ExportView';
 import { HierarchyView } from './HierarchyView';
 import { DashboardView } from './DashboardView';
 import { TokensView } from './TokensView';
-import { loadProject, loadGlobalConfig, watchProject } from '../lib/tauri';
+import { loadProject, loadGlobalConfig, watchProject, detectViteSetup, writeSaddleRuntime, spawnDevServer, killDevServer } from '../lib/tauri';
+import type { DevServerStatus } from './DashboardView';
 import { loadTokensFromConfig } from '../tokens/tokens';
 import { listen } from '@tauri-apps/api/event';
 import type { ProjectStructure, Component } from '../types/component';
@@ -69,12 +70,38 @@ export function GalleryView() {
   const [devServerUrl, setDevServerUrl] = useState<string>('');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tokenGroup, setTokenGroup] = useState<TokenGroup>('all');
+  const [devServerStatus, setDevServerStatus] = useState<DevServerStatus>({ kind: 'idle' });
 
   const addLog = (type: LogEntry['type'], message: string, source?: string) => {
     setLogs(prev => [...prev, { timestamp: new Date(), type, message, source }]);
   };
 
+  const startSaddleManagedVite = async (root: string) => {
+    setDevServerStatus({ kind: 'spawning' });
+    try {
+      const setup = await detectViteSetup(root);
+      if (!setup.has_vite || !setup.stories_path) {
+        // Fall back to manual mode — leave dev server URL empty, let the user paste their own.
+        setDevServerStatus({ kind: 'manual' });
+        addLog('warning', 'Vite or stories file not detected; switch to manual dev server', 'devserver');
+        return;
+      }
+      await writeSaddleRuntime(root, setup.vite_config_path);
+      const url = await spawnDevServer(root);
+      setDevServerUrl(url);
+      setDevServerStatus({ kind: 'live', url });
+      addLog('success', `Saddle-managed Vite live on ${url}`, 'devserver');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setDevServerStatus({ kind: 'failed', error: msg });
+      addLog('error', `Vite spawn failed: ${msg}`, 'devserver');
+    }
+  };
+
   const handleLoadProject = async () => {
+    // Tear down any previous dev server before loading a new project.
+    try { await killDevServer(); } catch {}
+    setDevServerStatus({ kind: 'idle' });
     try {
       const selectedPath = await open({
         directory: true,
@@ -125,6 +152,9 @@ export function GalleryView() {
       } catch (err) {
         addLog('warning', `File watcher failed: ${err}`, 'watcher');
       }
+
+      // Auto-start Saddle-managed Vite for this project.
+      await startSaddleManagedVite(projectRoot);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load project');
       addLog('error', `Failed: ${err}`, 'saddle');
@@ -198,10 +228,17 @@ export function GalleryView() {
     }
     if (view === 'settings') {
       return (
-        <>
-          {/* TODO(task-5): replace devServerStatus + onRetryDevServer placeholders with real orchestrator state */}
-          <DashboardView project={project} projectRoot={projectRoot} onLoadProject={handleLoadProject} onDevServerConnect={(url) => { setDevServerUrl(url); addLog('success', `Connected to dev server: ${url}`, 'devserver'); }} devServerStatus={{ kind: 'idle' }} onRetryDevServer={() => {}} />
-        </>
+        <DashboardView
+          project={project}
+          projectRoot={projectRoot}
+          onLoadProject={handleLoadProject}
+          devServerStatus={devServerStatus}
+          onRetryDevServer={() => startSaddleManagedVite(projectRoot)}
+          onDevServerConnect={(url) => {
+            setDevServerUrl(url);
+            addLog('success', `Connected to dev server: ${url}`, 'devserver');
+          }}
+        />
       );
     }
     if (view === 'tokens') {
