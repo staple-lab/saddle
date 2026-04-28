@@ -7,6 +7,17 @@ export interface FileInfo {
   is_dir: boolean;
 }
 
+export interface ViteSetup {
+  has_vite: boolean;
+  vite_config_path: string | null;
+  stories_path: string | null;
+  dev_script: string | null;
+}
+
+export async function detectViteSetup(projectRoot: string): Promise<ViteSetup> {
+  return invoke<ViteSetup>('detect_vite', { projectRoot });
+}
+
 export interface ParsedFile {
   frontmatter: any;
   code: string;

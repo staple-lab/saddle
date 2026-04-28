@@ -7,7 +7,7 @@ mod css_generator;
 mod dedup_analyzer;
 mod file_watcher;
 
-use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo};
+use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo, detect_vite_setup, ViteSetup};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
 use config_loader::{load_config, SaddleConfig};
 use mcp_server::{get_available_tools, MCPTool, create_variant_file};
@@ -23,6 +23,11 @@ fn greet(name: &str) -> String {
 #[tauri::command]
 fn scan_project_directory(path: String) -> Result<Vec<FileInfo>, String> {
     scan_directory(&path)
+}
+
+#[tauri::command]
+fn detect_vite(project_root: String) -> Result<ViteSetup, String> {
+    detect_vite_setup(&project_root)
 }
 
 #[tauri::command]
@@ -208,6 +213,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             greet,
             scan_project_directory,
+            detect_vite,
             read_component_file,
             parse_component_file,
             update_tokens,
