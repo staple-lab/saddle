@@ -89,6 +89,17 @@ fn validate_manifest(manifest: &Manifest) -> Result<(), ManifestError> {
         }
     }
 
+    // Globally unique component ids.
+    let mut seen_component_ids = std::collections::HashSet::<&str>::new();
+    for c in &manifest.components {
+        if !seen_component_ids.insert(c.id.as_str()) {
+            return Err(ManifestError::ValidationError(format!(
+                "duplicate component id '{}'",
+                c.id
+            )));
+        }
+    }
+
     // Globally unique variant ids — manifest-wide, not per-component.
     let mut seen_ids = std::collections::HashSet::<&str>::new();
     for c in &manifest.components {
@@ -310,6 +321,28 @@ mod tests {
         assert!(body.starts_with("# Tooltip · Default"));
         let trimmed = body.trim();
         assert_eq!(trimmed, "# Tooltip · Default");
+    }
+
+    #[test]
+    fn parse_rejects_duplicate_component_ids() {
+        let json = r#"{
+            "$schema":"saddle/manifest/v1","version":1,
+            "components":[
+                {"id":"shared","name":"A","directory":"src/components/A","variants":[
+                    {"id":"a-d","name":"D","file":"A.tsx","doc":"A.md"}
+                ]},
+                {"id":"shared","name":"B","directory":"src/components/B","variants":[
+                    {"id":"b-d","name":"D","file":"B.tsx","doc":"B.md"}
+                ]}
+            ]
+        }"#;
+        match parse_manifest(json) {
+            Err(ManifestError::ValidationError(msg)) => {
+                assert!(msg.contains("shared"), "msg: {}", msg);
+                assert!(msg.contains("component"), "msg: {}", msg);
+            }
+            other => panic!("expected ValidationError mentioning component, got {:?}", other),
+        }
     }
 
     #[test]
