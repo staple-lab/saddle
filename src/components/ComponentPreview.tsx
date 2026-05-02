@@ -37,7 +37,7 @@ export type IframeNode = {
 export type ComponentPreviewHandle = {
   setElementStyles: (path: number[], styles: Record<string, string>) => void;
   setElementState: (path: number[], state: string) => void;
-  setProps: (props: Record<string, string>) => void;
+  setProps: (props: Record<string, any>) => void;
 };
 
 interface ComponentPreviewProps {

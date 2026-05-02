@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Component } from '../types/component';
 import { ComponentDropdown } from '../components/ComponentDropdown';
 import { StyleEditor } from '../components/StyleEditor';
@@ -8,6 +8,8 @@ import { ResizablePanel } from '../components/ResizablePanel';
 import { ElementTree } from '../components/ElementTree';
 import { updateTokens, writeComponentFile, readComponentFile } from '../lib/tauri';
 import { DriftPill } from '../components/DriftPill';
+import { PropsPanel } from '../components/PropsPanel';
+import { inferPropSchema } from '../lib/inferProps';
 
 interface EditorViewProps {
   components: Component[];
@@ -75,7 +77,8 @@ export function EditorView({ components, component, onSelectComponent, devServer
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
   const [tree, setTree] = useState<IframeNode | null>(null);
-  const [variantProps, setVariantProps] = useState<Array<{ key: string; value: string }>>([]);
+  const [propValues, setPropValues] = useState<Record<string, any>>({});
+  const [customPropRows, setCustomPropRows] = useState<Array<{ key: string; value: string }>>([]);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
   const previewRef = useRef<ComponentPreviewHandle | null>(null);
   const [newVariantOpen, setNewVariantOpen] = useState(false);
@@ -83,6 +86,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
   const [newVariantBusy, setNewVariantBusy] = useState(false);
   const [newVariantError, setNewVariantError] = useState<string | null>(null);
   const selectedVariant = component.variants[selectedVariantIndex];
+  const propSchema = useMemo(() => inferPropSchema(selectedVariant.code), [selectedVariant.code]);
 
   useEffect(() => {
     const t = selectedVariant.frontmatter?.tokens || {};
@@ -94,19 +98,22 @@ export function EditorView({ components, component, onSelectComponent, devServer
     setSelectedVariantIndex(0);
   }, [component.directory]);
 
-  // Reset prop overrides when the variant changes (each variant starts clean).
+  // Reset prop overrides when the variant changes — each variant starts clean.
   useEffect(() => {
-    setVariantProps([]);
+    setPropValues({});
+    setCustomPropRows([]);
   }, [selectedVariantIndex, component.directory]);
 
-  // Push prop overrides to the iframe whenever they change.
+  // Stream prop overrides to the iframe whenever they change.
   useEffect(() => {
-    const dict: Record<string, string> = {};
-    for (const { key, value } of variantProps) {
-      if (key.trim()) dict[key.trim()] = value;
+    const merged: Record<string, any> = { ...propValues };
+    for (const { key, value } of customPropRows) {
+      if (!key.trim()) continue;
+      // Best-effort coercion: bool, number, JSON, otherwise raw string.
+      merged[key.trim()] = coerceCustomValue(value);
     }
-    previewRef.current?.setProps?.(dict);
-  }, [variantProps]);
+    previewRef.current?.setProps?.(merged);
+  }, [propValues, customPropRows]);
 
   // camelCase → kebab-case so the visible value in the field matches what the bridge
   // applies to the live element.
@@ -392,8 +399,11 @@ export function EditorView({ components, component, onSelectComponent, devServer
 
           {tab === 'props' && (
             <PropsPanel
-              rows={variantProps}
-              onChange={setVariantProps}
+              schema={propSchema}
+              values={propValues}
+              onChange={setPropValues}
+              customRows={customPropRows}
+              onCustomChange={setCustomPropRows}
             />
           )}
 
@@ -523,84 +533,6 @@ export function EditorView({ components, component, onSelectComponent, devServer
   );
 }
 
-function PropsPanel({
-  rows,
-  onChange,
-}: {
-  rows: Array<{ key: string; value: string }>;
-  onChange: (next: Array<{ key: string; value: string }>) => void;
-}) {
-  const updateRow = (idx: number, patch: Partial<{ key: string; value: string }>) => {
-    const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
-    onChange(next);
-  };
-  const removeRow = (idx: number) => onChange(rows.filter((_, i) => i !== idx));
-  const addRow = () => onChange([...rows, { key: '', value: '' }]);
-
-  return (
-    <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', lineHeight: 1.5 }}>
-        Add prop overrides for this variant. Values stream live to the running component
-        via <code style={{ fontFamily: 'var(--font-code)' }}>window.__SADDLE_PROPS__</code>.
-        Your story file needs to subscribe (see <code style={{ fontFamily: 'var(--font-code)' }}>useSaddleProps()</code>).
-      </div>
-      {rows.length === 0 && (
-        <div style={{ fontSize: 12, color: 'var(--color-fg-subtle)', fontStyle: 'italic', padding: '8px 0' }}>
-          No overrides yet.
-        </div>
-      )}
-      {rows.map((row, idx) => (
-        <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-          <input
-            value={row.key}
-            onChange={(e) => updateRow(idx, { key: e.target.value })}
-            placeholder="prop"
-            style={{
-              flex: '0 0 35%', height: 28, padding: '0 8px',
-              border: '1px solid var(--color-border)', borderRadius: 6,
-              fontSize: 12, fontFamily: 'var(--font-code)',
-            }}
-          />
-          <input
-            value={row.value}
-            onChange={(e) => updateRow(idx, { value: e.target.value })}
-            placeholder="value"
-            style={{
-              flex: 1, height: 28, padding: '0 8px',
-              border: '1px solid var(--color-border)', borderRadius: 6,
-              fontSize: 12, fontFamily: 'var(--font-code)',
-            }}
-          />
-          <button
-            onClick={() => removeRow(idx)}
-            style={{
-              flex: '0 0 28px', height: 28, padding: 0,
-              background: 'transparent', border: '1px solid var(--color-border)',
-              borderRadius: 6, fontSize: 14, color: 'var(--color-fg-muted)',
-              cursor: 'pointer',
-            }}
-            title="Remove"
-          >
-            ×
-          </button>
-        </div>
-      ))}
-      <button
-        onClick={addRow}
-        style={{
-          height: 30, padding: '0 12px',
-          background: 'transparent', border: '1px dashed var(--color-border)',
-          borderRadius: 6, fontSize: 12, fontWeight: 500,
-          color: 'var(--color-fg)', cursor: 'pointer',
-          alignSelf: 'flex-start',
-        }}
-      >
-        + Add prop
-      </button>
-    </div>
-  );
-}
-
 function EmptyTab({ message }: { message: string }) {
   return (
     <div style={{ padding: 24, fontSize: 12, color: 'var(--color-fg-muted)', textAlign: 'center' }}>
@@ -634,4 +566,16 @@ function MetadataPanel({ frontmatter }: { frontmatter: any }) {
       </div>
     </div>
   );
+}
+
+function coerceCustomValue(raw: string): any {
+  const v = raw.trim();
+  if (v === 'true') return true;
+  if (v === 'false') return false;
+  if (v === 'null') return null;
+  if (v !== '' && !isNaN(Number(v)) && /^-?\d+(\.\d+)?$/.test(v)) return Number(v);
+  if ((v.startsWith('{') && v.endsWith('}')) || (v.startsWith('[') && v.endsWith(']'))) {
+    try { return JSON.parse(v); } catch {}
+  }
+  return raw;
 }
