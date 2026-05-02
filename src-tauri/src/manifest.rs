@@ -152,6 +152,28 @@ pub fn merge_preserve_ids(existing: &Manifest, mut desired: Manifest) -> Manifes
     desired
 }
 
+/// Build the body of a freshly-created variant `.md` doc using the
+/// optional `description` and `usage` fields lifted from the variant's
+/// `.tsx` frontmatter. If neither is present, returns just the heading.
+pub fn seed_doc_template(
+    component_name: &str,
+    variant_name: &str,
+    description: Option<&str>,
+    usage: Option<&str>,
+) -> String {
+    let heading = format!("# {} · {}", component_name, variant_name);
+    match (description, usage) {
+        (None, None) => format!("{}\n", heading),
+        (desc, usage) => {
+            let desc_block = desc.map(|d| format!("\n{}\n", d.trim())).unwrap_or_default();
+            let usage_text = usage
+                .map(|u| u.trim().to_string())
+                .unwrap_or_else(|| "Document when and how to use this variant.".to_string());
+            format!("{}\n{}\n## Usage\n\n{}\n", heading, desc_block, usage_text)
+        }
+    }
+}
+
 fn slugify(input: &str) -> String {
     let mut out = String::with_capacity(input.len());
     let mut prev_dash = false;
@@ -261,6 +283,33 @@ mod tests {
             Err(ManifestError::ValidationError(msg)) => assert!(msg.contains("dup"), "msg: {}", msg),
             other => panic!("expected ValidationError, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn seed_doc_template_from_frontmatter() {
+        // Full frontmatter
+        let body = seed_doc_template("Button", "Primary", Some("A primary CTA."), Some("Use for the main action on a page."));
+        assert!(body.starts_with("# Button · Primary"));
+        assert!(body.contains("A primary CTA."));
+        assert!(body.contains("## Usage"));
+        assert!(body.contains("Use for the main action on a page."));
+
+        // No description
+        let body = seed_doc_template("Card", "Default", None, Some("Wrap content."));
+        assert!(body.starts_with("# Card · Default"));
+        assert!(!body.contains("A primary CTA."));
+        assert!(body.contains("Wrap content."));
+
+        // No usage
+        let body = seed_doc_template("Modal", "Sheet", Some("A bottom sheet modal."), None);
+        assert!(body.contains("A bottom sheet modal."));
+        assert!(body.contains("Document when and how to use this variant."));
+
+        // Neither
+        let body = seed_doc_template("Tooltip", "Default", None, None);
+        assert!(body.starts_with("# Tooltip · Default"));
+        let trimmed = body.trim();
+        assert_eq!(trimmed, "# Tooltip · Default");
     }
 
     #[test]
