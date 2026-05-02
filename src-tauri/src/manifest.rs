@@ -202,6 +202,17 @@ fn slugify(input: &str) -> String {
     while out.ends_with('-') {
         out.pop();
     }
+    if out.is_empty() && !input.is_empty() {
+        // Deterministic fallback for inputs containing no ASCII alphanumerics
+        // (e.g. all-non-Latin names). Use a stable byte-FNV-1a-like hash so
+        // the same input always produces the same slug.
+        let mut hash: u64 = 0xcbf29ce484222325;
+        for b in input.bytes() {
+            hash ^= b as u64;
+            hash = hash.wrapping_mul(0x100000001b3);
+        }
+        return format!("c-{:x}", hash);
+    }
     out
 }
 
@@ -321,6 +332,27 @@ mod tests {
         assert!(body.starts_with("# Tooltip · Default"));
         let trimmed = body.trim();
         assert_eq!(trimmed, "# Tooltip · Default");
+    }
+
+    #[test]
+    fn slugify_never_empty_for_non_empty_input() {
+        // Non-ASCII names should still produce a non-empty slug.
+        let s1 = slugify("日本語");
+        assert!(!s1.is_empty(), "slug for '日本語' was empty");
+
+        let s2 = slugify("🎨🎭");
+        assert!(!s2.is_empty(), "slug for '🎨🎭' was empty");
+
+        // Determinism: same input → same slug.
+        assert_eq!(slugify("日本語"), s1);
+
+        // Distinct non-ASCII inputs of different lengths should not collide
+        // with each other (though the fallback need not be a strong hash).
+        // We don't assert non-collision in general — just non-emptiness.
+
+        // Ordinary ASCII still works as before.
+        assert_eq!(slugify("Button Primary"), "button-primary");
+        assert_eq!(slugify(""), ""); // empty input → empty slug is fine
     }
 
     #[test]
