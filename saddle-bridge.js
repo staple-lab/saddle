@@ -32,6 +32,7 @@
 //     { type: 'saddle:set-element-styles', path, styles } — apply CSS props inline to one element
 //     { type: 'saddle:set-element-state', path, state }   — force default/hover/focus/active/disabled
 //                                                           on the element (best-effort)
+//     { type: 'saddle:set-variant', variantName: 'Default' } — show only the matching variant
 //
 //   iframe -> Saddle:
 //     { type: 'saddle:tree', tree }                 — full serialised DOM tree
@@ -255,6 +256,90 @@
     });
   }
 
+  // Track the elements we've hidden via setProperty so we can restore them.
+  var hiddenForVariant = new Set();
+  var lastVariantName = null;
+
+  function restoreVariantFilter() {
+    hiddenForVariant.forEach(function (el) {
+      try { el.style.removeProperty('display'); } catch (err) {}
+    });
+    hiddenForVariant.clear();
+  }
+
+  /**
+   * Show only the rendered DOM associated with `variantName`. Heuristic:
+   * find the smallest element whose plain text exactly matches the variant
+   * name (case-insensitive), then walk up to find an ancestor whose siblings
+   * we can hide. If no match is found, restore everything.
+   */
+  function applyVariantFilter(variantName) {
+    lastVariantName = variantName;
+    restoreVariantFilter();
+    if (!variantName) return;
+    var target = variantName.trim().toLowerCase();
+    if (!target) return;
+
+    // Find every leaf-ish element whose text exactly matches the variant.
+    var candidates = [];
+    var walker = document.createTreeWalker(document.body, NodeFilter.SHOW_ELEMENT, {
+      acceptNode: function (el) {
+        // Skip our overlay
+        if (el.id === '__saddle_overlay__') return NodeFilter.FILTER_REJECT;
+        var t = (el.textContent || '').trim().toLowerCase();
+        if (t === target) return NodeFilter.FILTER_ACCEPT;
+        return NodeFilter.FILTER_SKIP;
+      },
+    });
+    var node = walker.nextNode();
+    while (node) {
+      candidates.push(node);
+      node = walker.nextNode();
+    }
+    if (candidates.length === 0) return;
+
+    // Pick the smallest candidate (deepest in tree) — most likely the actual
+    // button/card rather than its container.
+    var chosen = candidates[0];
+    for (var ci = 0; ci < candidates.length; ci++) {
+      var c = candidates[ci];
+      if (chosen.contains(c) && c !== chosen) chosen = c;
+    }
+
+    // Walk up to a reasonable wrapper: stop at the body or when the parent
+    // contains more than just `chosen`'s subtree.
+    var wrapper = chosen;
+    while (wrapper.parentElement && wrapper.parentElement !== document.body) {
+      var p = wrapper.parentElement;
+      // Stop when the parent has multiple visible children — those siblings
+      // are what we'll hide.
+      if (p.children.length > 1) {
+        wrapper = p;
+        break;
+      }
+      wrapper = p;
+    }
+
+    // Hide every sibling at every ancestor level up to body, except those
+    // that contain `wrapper`.
+    var cursor = wrapper;
+    while (cursor && cursor !== document.body) {
+      var parent = cursor.parentElement;
+      if (!parent) break;
+      for (var si = 0; si < parent.children.length; si++) {
+        var sibling = parent.children[si];
+        if (sibling === cursor) continue;
+        if (sibling.contains(cursor)) continue;
+        if (hiddenForVariant.has(sibling)) continue;
+        try {
+          sibling.style.setProperty('display', 'none', 'important');
+          hiddenForVariant.add(sibling);
+        } catch (err) {}
+      }
+      cursor = parent;
+    }
+  }
+
   // Listen for messages from Saddle
   window.addEventListener('message', function (e) {
     var msg = e.data;
@@ -262,6 +347,7 @@
     switch (msg.type) {
       case 'saddle:scan':
         sendTree();
+        if (lastVariantName) applyVariantFilter(lastVariantName);
         break;
       case 'saddle:select':
         sendElement(msg.path || []);
@@ -280,6 +366,9 @@
         break;
       case 'saddle:set-element-state':
         setElementState(msg.path || [], msg.state);
+        break;
+      case 'saddle:set-variant':
+        applyVariantFilter(msg.variantName || '');
         break;
     }
   });

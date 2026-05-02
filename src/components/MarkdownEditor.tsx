@@ -33,9 +33,9 @@ export function MarkdownEditor({ filePath, initialContent, onSave }: MarkdownEdi
   };
 
   return (
-    <div style={{ display: 'flex', flex: 1, minHeight: 0 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
       <div
-        style={{ flex: 1, minHeight: 0, borderRight: '1px solid var(--color-border)' }}
+        style={{ flex: 1, minHeight: 0, borderBottom: '1px solid var(--color-border)' }}
         onBlur={handleBlur}
       >
         <CodeEditor

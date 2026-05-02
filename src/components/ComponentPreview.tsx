@@ -521,6 +521,15 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
     iframeRef.current.contentWindow.postMessage({ type: 'saddle:set-tokens', tokens }, '*');
   }, [tokenStore, bridgeConnected]);
 
+  // Push variant name to the iframe whenever it changes (after the bridge is up).
+  useEffect(() => {
+    if (!iframeRef.current?.contentWindow || !bridgeConnected) return;
+    iframeRef.current.contentWindow.postMessage(
+      { type: 'saddle:set-variant', variantName: variantName ?? '' },
+      '*',
+    );
+  }, [variantName, bridgeConnected]);
+
   const iframeUrl = useMemo(() => {
     if (!devServerUrl) return '';
     // Strip any existing fragment so we can append our own; keep query string.
@@ -531,13 +540,9 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
     const params = new URLSearchParams(existingQuery);
     params.set('embed', '1');
     const query = params.toString();
-    const fragment = componentName
-      ? (variantName
-          ? `#${slugify(componentName)}/${slugify(variantName)}`
-          : `#${slugify(componentName)}`)
-      : '';
+    const fragment = componentName ? `#${slugify(componentName)}` : '';
     return `${cleanPath}/${query ? `?${query}` : ''}${fragment}`;
-  }, [devServerUrl, componentName, variantName]);
+  }, [devServerUrl, componentName]);
 
   // Listen for bridge messages
   useEffect(() => {
@@ -551,6 +556,11 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
         case 'saddle:hello':
           setBridgeConnected(true);
           onBridgeChange?.(true);
+          // Push the current variant immediately so the filter applies on first load.
+          e.source?.postMessage(
+            { type: 'saddle:set-variant', variantName: variantName ?? '' },
+            { targetOrigin: '*' },
+          );
           break;
         case 'saddle:tree':
           setBridgeConnected(true);
@@ -567,7 +577,7 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
     }
     window.addEventListener('message', onMessage);
     return () => window.removeEventListener('message', onMessage);
-  }, [onTree, onElementSelected, onBridgeChange, onCanvasClick]);
+  }, [onTree, onElementSelected, onBridgeChange, onCanvasClick, variantName]);
 
   // Reset bridge state when the URL changes
   useEffect(() => {

@@ -195,7 +195,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
 
       {/* Left Panel - Markdown doc */}
-      <ResizablePanel defaultWidth={420} minWidth={280} maxWidth={640} side="left">
+      <ResizablePanel defaultWidth={480} minWidth={280} maxWidth={640} side="left">
         <div style={{
           height: 38, padding: '0 14px',
           display: 'flex', alignItems: 'center',
