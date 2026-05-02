@@ -88,6 +88,20 @@ fn validate_manifest(manifest: &Manifest) -> Result<(), ManifestError> {
             validate_path("variant.doc", &v.doc)?;
         }
     }
+
+    // Globally unique variant ids — manifest-wide, not per-component.
+    let mut seen_ids = std::collections::HashSet::<&str>::new();
+    for c in &manifest.components {
+        for v in &c.variants {
+            if !seen_ids.insert(v.id.as_str()) {
+                return Err(ManifestError::ValidationError(format!(
+                    "duplicate variant id '{}'",
+                    v.id
+                )));
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -174,6 +188,24 @@ mod tests {
         let json = make_manifest_with_paths("src/x", "", "X.md");
         match parse_manifest(&json) {
             Err(ManifestError::ValidationError(msg)) => assert!(msg.contains("empty") || msg.contains("file")),
+            other => panic!("expected ValidationError, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn parse_rejects_duplicate_ids() {
+        let json = r#"{
+            "$schema":"saddle/manifest/v1","version":1,
+            "components":[{
+                "id":"button","name":"Button","directory":"src/components/Button",
+                "variants":[
+                    {"id":"dup","name":"A","file":"A.tsx","doc":"A.md"},
+                    {"id":"dup","name":"B","file":"B.tsx","doc":"B.md"}
+                ]
+            }]
+        }"#;
+        match parse_manifest(json) {
+            Err(ManifestError::ValidationError(msg)) => assert!(msg.contains("dup"), "msg: {}", msg),
             other => panic!("expected ValidationError, got {:?}", other),
         }
     }
