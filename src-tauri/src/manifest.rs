@@ -119,6 +119,59 @@ pub fn serialize_manifest(manifest: &Manifest) -> String {
     serde_json::to_string_pretty(manifest).expect("manifest serialization is infallible") + "\n"
 }
 
+/// Merge a freshly-built ("desired") manifest with an existing one,
+/// preserving stable `id` values for variants matched by `file` path
+/// and for components matched by `directory` path. Variants in the
+/// desired manifest with no match get a freshly slugged id.
+pub fn merge_preserve_ids(existing: &Manifest, mut desired: Manifest) -> Manifest {
+    for c in &mut desired.components {
+        if let Some(existing_c) = existing
+            .components
+            .iter()
+            .find(|ec| ec.directory == c.directory)
+        {
+            c.id = existing_c.id.clone();
+        } else {
+            c.id = slugify(&c.name);
+        }
+
+        for v in &mut c.variants {
+            let match_in_existing_c = existing
+                .components
+                .iter()
+                .find(|ec| ec.directory == c.directory)
+                .and_then(|ec| ec.variants.iter().find(|ev| ev.file == v.file));
+
+            if let Some(existing_v) = match_in_existing_c {
+                v.id = existing_v.id.clone();
+            } else {
+                v.id = slugify(&format!("{}-{}", c.name, v.name));
+            }
+        }
+    }
+    desired
+}
+
+fn slugify(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut prev_dash = false;
+    for ch in input.chars() {
+        if ch.is_ascii_alphanumeric() {
+            for c in ch.to_lowercase() {
+                out.push(c);
+            }
+            prev_dash = false;
+        } else if !prev_dash && !out.is_empty() {
+            out.push('-');
+            prev_dash = true;
+        }
+    }
+    while out.ends_with('-') {
+        out.pop();
+    }
+    out
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -208,5 +261,42 @@ mod tests {
             Err(ManifestError::ValidationError(msg)) => assert!(msg.contains("dup"), "msg: {}", msg),
             other => panic!("expected ValidationError, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn merge_diff_preserves_ids() {
+        let existing = sample();
+
+        let desired = Manifest {
+            schema: "saddle/manifest/v1".to_string(),
+            version: 1,
+            components: vec![ManifestComponent {
+                id: "button".to_string(),
+                name: "Button".to_string(),
+                directory: "src/components/Button".to_string(),
+                variants: vec![
+                    ManifestVariant {
+                        id: "__new__".to_string(),
+                        name: "Primary".to_string(),
+                        file: "Button.Primary.tsx".to_string(),
+                        doc: "Button.Primary.md".to_string(),
+                    },
+                    ManifestVariant {
+                        id: "__new__".to_string(),
+                        name: "Ghost".to_string(),
+                        file: "Button.Ghost.tsx".to_string(),
+                        doc: "Button.Ghost.md".to_string(),
+                    },
+                ],
+            }],
+        };
+
+        let merged = merge_preserve_ids(&existing, desired);
+
+        // First variant matches existing by `file`, so id is preserved.
+        assert_eq!(merged.components[0].variants[0].id, "button-primary");
+        // Second variant is new — gets a freshly slugged id, not "__new__".
+        assert_ne!(merged.components[0].variants[1].id, "__new__");
+        assert!(!merged.components[0].variants[1].id.is_empty());
     }
 }
