@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import type { Component } from '../types/component';
 import { ComponentDropdown } from '../components/ComponentDropdown';
+import { CodeEditor } from '../components/CodeEditor';
 import { StyleEditor } from '../components/StyleEditor';
 import { ComponentPreview, type ComponentPreviewHandle, type IframeNode } from '../components/ComponentPreview';
 import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
@@ -22,10 +23,11 @@ interface EditorViewProps {
   onOpenPicker: () => void;
 }
 
-type Tab = 'style' | 'props' | 'ai' | 'metadata';
+type Tab = 'style' | 'code' | 'props' | 'ai' | 'metadata';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'style', label: 'Style' },
+  { id: 'code', label: 'Code' },
   { id: 'props', label: 'Props' },
   { id: 'ai', label: 'AI' },
   { id: 'metadata', label: 'Metadata' },
@@ -395,6 +397,22 @@ export function EditorView({ components, component, onSelectComponent, devServer
             ) : (
               <EmptyTab message="Select an element in the preview to inspect its styles." />
             )
+          )}
+
+          {tab === 'code' && (
+            <div style={{ padding: 14, display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
+              <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>
+                {selectedVariant.filePath.split('/').pop()}
+              </div>
+              <div style={{ flex: 1, minHeight: 240 }}>
+                <CodeEditor
+                  value={selectedVariant.code}
+                  language="typescript"
+                  readOnly={true}
+                  onChange={() => {}}
+                />
+              </div>
+            </div>
           )}
 
           {tab === 'props' && (
