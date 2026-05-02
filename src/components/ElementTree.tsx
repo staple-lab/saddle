@@ -151,6 +151,41 @@ function Node({
           <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--color-fg-subtle)' }}>root</span>
         )}
       </div>
+      {isSelected && node.classes && node.classes.length > 0 && (
+        <div
+          style={{
+            paddingLeft: 8 + depth * 12 + 18,
+            paddingRight: 8,
+            paddingTop: 4,
+            paddingBottom: 6,
+            fontFamily: 'var(--font-code)',
+            fontSize: 11,
+            lineHeight: 1.55,
+            color: '#16a34a',
+            background: 'rgba(0, 122, 255, 0.04)',
+            wordBreak: 'break-word',
+            whiteSpace: 'normal',
+          }}
+        >
+          {node.classes.map((c, i) => (
+            <span
+              key={i}
+              style={{
+                display: 'inline-block',
+                background: 'rgba(22, 163, 74, 0.08)',
+                border: '1px solid rgba(22, 163, 74, 0.18)',
+                borderRadius: 4,
+                padding: '1px 6px',
+                marginRight: 4,
+                marginBottom: 3,
+                color: '#15803d',
+              }}
+            >
+              {c}
+            </span>
+          ))}
+        </div>
+      )}
       {hasChildren && open && (
         <div>
           {node.children.map((child, i) => (
