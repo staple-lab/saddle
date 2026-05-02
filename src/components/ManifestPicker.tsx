@@ -87,7 +87,10 @@ export function ManifestPicker({ projectRoot, existing, mode, onSave, onCancel }
   };
 
   const handleSave = async () => {
-    await onSave(Array.from(selected), extensions);
+    const filtered = Array.from(selected).filter(
+      (rel) => extensions.some((e) => rel.endsWith(e)),
+    );
+    await onSave(filtered, extensions);
   };
 
   if (scanning) {
@@ -154,7 +157,7 @@ export function ManifestPicker({ projectRoot, existing, mode, onSave, onCancel }
 
         <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa' }}>
           <div style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>
-            {summarise(selected)}
+            {summarise(selected, extensions)}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={onCancel} style={cancelButtonStyle}>Cancel</button>
@@ -228,8 +231,8 @@ function filterTree(nodes: TreeNode[], filter: string, extensions: string[]): Tr
   return recur(nodes);
 }
 
-function summarise(selected: Set<string>): string {
-  const sel = Array.from(selected);
+function summarise(selected: Set<string>, extensions: string[]): string {
+  const sel = Array.from(selected).filter((r) => extensions.some((e) => r.endsWith(e)));
   const compDirs = new Set<string>();
   for (const f of sel) {
     const dir = f.includes('/') ? f.slice(0, f.lastIndexOf('/')) : '';
