@@ -288,3 +288,16 @@ export async function loadProject(
     blocks,
   };
 }
+
+import type { Manifest } from '../types/manifest';
+
+export async function readManifest(projectRoot: string): Promise<Manifest> {
+  return invoke<Manifest>('read_manifest', { projectRoot });
+}
+
+export async function writeManifest(projectRoot: string, manifest: Manifest): Promise<void> {
+  return invoke<void>('write_manifest', {
+    projectRoot,
+    manifestJson: JSON.stringify(manifest),
+  });
+}
