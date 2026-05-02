@@ -122,7 +122,7 @@ fn watch_project(app_handle: tauri::AppHandle, project_root: String) -> Result<(
 
 #[derive(serde::Serialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
-enum ReadManifestError {
+enum ManifestCommandError {
     NotFound { path: String },
     InvalidJson { message: String },
     UnsupportedVersion { version: u32 },
@@ -130,7 +130,7 @@ enum ReadManifestError {
     Io { message: String },
 }
 
-impl From<manifest::ManifestError> for ReadManifestError {
+impl From<manifest::ManifestError> for ManifestCommandError {
     fn from(e: manifest::ManifestError) -> Self {
         match e {
             manifest::ManifestError::NotFound(p) => Self::NotFound { path: p },
@@ -143,16 +143,16 @@ impl From<manifest::ManifestError> for ReadManifestError {
 }
 
 #[tauri::command]
-fn read_manifest(project_root: String) -> Result<manifest::Manifest, ReadManifestError> {
+fn read_manifest(project_root: String) -> Result<manifest::Manifest, ManifestCommandError> {
     manifest::read_manifest_from_disk(std::path::Path::new(&project_root)).map_err(Into::into)
 }
 
 #[tauri::command]
-fn write_manifest(project_root: String, manifest_json: String) -> Result<(), String> {
+fn write_manifest(project_root: String, manifest_json: String) -> Result<(), ManifestCommandError> {
     let manifest: manifest::Manifest = serde_json::from_str(&manifest_json)
-        .map_err(|e| format!("Invalid manifest JSON: {}", e))?;
+        .map_err(|e| ManifestCommandError::InvalidJson { message: e.to_string() })?;
     manifest::write_manifest_to_disk(std::path::Path::new(&project_root), &manifest)
-        .map_err(|e| format!("{}", e))
+        .map_err(Into::into)
 }
 
 #[tauri::command]

@@ -224,10 +224,13 @@ pub fn manifest_path(project_root: &Path) -> PathBuf {
 
 pub fn read_manifest_from_disk(project_root: &Path) -> Result<Manifest, ManifestError> {
     let path = manifest_path(project_root);
-    if !path.exists() {
-        return Err(ManifestError::NotFound(path.to_string_lossy().to_string()));
-    }
-    let content = fs::read_to_string(&path).map_err(|e| ManifestError::Io(e.to_string()))?;
+    let content = fs::read_to_string(&path).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
+            ManifestError::NotFound(path.to_string_lossy().to_string())
+        } else {
+            ManifestError::Io(e.to_string())
+        }
+    })?;
     parse_manifest(&content)
 }
 
