@@ -7,7 +7,6 @@ import { ComponentPreview, type ComponentPreviewHandle } from '../components/Com
 import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { ResizablePanel } from '../components/ResizablePanel';
 import { updateTokens, writeComponentFile, readComponentFile } from '../lib/tauri';
-import { MarkdownEditor } from '../components/MarkdownEditor';
 import { DriftPill } from '../components/DriftPill';
 
 interface EditorViewProps {
@@ -21,11 +20,10 @@ interface EditorViewProps {
   onOpenPicker: () => void;
 }
 
-type Tab = 'style' | 'code' | 'ai' | 'metadata';
+type Tab = 'style' | 'ai' | 'metadata';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'style', label: 'Style' },
-  { id: 'code', label: 'Code' },
   { id: 'ai', label: 'AI' },
   { id: 'metadata', label: 'Metadata' },
 ];
@@ -194,7 +192,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
   return (
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
 
-      {/* Left Panel - Markdown doc */}
+      {/* Left Panel - Variant source markup (read-only) */}
       <ResizablePanel defaultWidth={480} minWidth={280} maxWidth={640} side="left">
         <div style={{
           height: 38, padding: '0 14px',
@@ -204,15 +202,14 @@ export function EditorView({ components, component, onSelectComponent, devServer
           fontSize: 11, color: 'var(--color-fg-muted)',
           fontFamily: 'var(--font-code)',
         }}>
-          {selectedVariant.docPath.split('/').pop()}
+          {selectedVariant.filePath.split('/').pop()}
         </div>
-        <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
-          <MarkdownEditor
-            filePath={selectedVariant.docPath}
-            initialContent={selectedVariant.docContent}
-            onSave={async (path, content) => {
-              await writeComponentFile(path, content);
-            }}
+        <div style={{ flex: 1, minHeight: 0 }}>
+          <CodeEditor
+            value={selectedVariant.code}
+            language="typescript"
+            readOnly={true}
+            onChange={() => {}}
           />
         </div>
       </ResizablePanel>
@@ -373,21 +370,6 @@ export function EditorView({ components, component, onSelectComponent, devServer
               />
             ) : (
               <EmptyTab message="Select an element in the preview to inspect its styles." />
-            )
-          )}
-
-          {tab === 'code' && (
-            selectedElementPath ? (
-              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
-                <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>
-                  {selectedVariant.filePath.split('/').pop()}
-                </div>
-                <div style={{ flex: 1, minHeight: 400 }}>
-                  <CodeEditor value={selectedVariant.code} language="typescript" readOnly={false} onChange={() => {}} />
-                </div>
-              </div>
-            ) : (
-              <EmptyTab message="Select an element in the preview to view its source." />
             )
           )}
 
