@@ -108,12 +108,14 @@ export function ComponentDropdown({
                       display: 'block', width: '100%', textAlign: 'left',
                       padding: '6px 10px', borderRadius: 4, border: 'none',
                       background: isActive ? 'rgba(0,113,227,0.08)' : 'transparent',
-                      color: 'var(--color-fg)', fontSize: 13, cursor: 'pointer',
+                      color: v.missing ? 'var(--color-danger)' : 'var(--color-fg)',
+                      textDecoration: v.missing ? 'line-through' : 'none',
+                      fontSize: 13, cursor: 'pointer',
                     }}
                     onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
                     onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
                   >
-                    {v.variantName}
+                    {v.variantName}{v.missing ? ' ⚠' : ''}
                   </button>
                 );
               })}

@@ -231,34 +231,47 @@ export function EditorView({ components, component, onSelectComponent, devServer
           onClick={(e) => { if (e.target === e.currentTarget) clearSelection(); }}
           style={{ flex: 1, minHeight: 0, padding: 20, display: 'flex', flexDirection: 'column' }}
         >
-          <ComponentPreview
-            ref={previewRef}
-            code={selectedVariant.code}
-            frontmatter={selectedVariant.frontmatter}
-            liveTokens={localTokens}
-            devServerUrl={devServerUrl}
-            componentName={component.name}
-            selectedPath={selectedElementPath}
-            onCanvasClick={clearSelection}
-            onNewVariant={() => {
-              console.log('[new-variant] handler fired in EditorView, opening modal');
-              setNewVariantName('');
-              setNewVariantError(null);
-              setNewVariantOpen(true);
-            }}
-            onElementSelected={(path, styles) => {
-              // Bridge sends kebab-case (from getComputedStyle); StyleEditor uses camelCase.
-              // Store both forms so reads & edits both work.
-              const merged: Record<string, string> = {};
-              for (const [k, v] of Object.entries(styles)) {
-                merged[k] = v;
-                merged[k.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = v;
-              }
-              setSelectedElementPath(path);
-              setSelectedElementStyles(merged);
-              setTab('style');
-            }}
-          />
+          {selectedVariant.missing ? (
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: 'var(--color-fg-muted)' }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-danger)' }}>File not found</div>
+              <div style={{ fontSize: 12 }}>{selectedVariant.filePath}</div>
+              <button
+                onClick={onOpenPicker}
+                style={{ height: 28, padding: '0 14px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}
+              >
+                Open picker to remove
+              </button>
+            </div>
+          ) : (
+            <ComponentPreview
+              ref={previewRef}
+              code={selectedVariant.code}
+              frontmatter={selectedVariant.frontmatter}
+              liveTokens={localTokens}
+              devServerUrl={devServerUrl}
+              componentName={component.name}
+              selectedPath={selectedElementPath}
+              onCanvasClick={clearSelection}
+              onNewVariant={() => {
+                console.log('[new-variant] handler fired in EditorView, opening modal');
+                setNewVariantName('');
+                setNewVariantError(null);
+                setNewVariantOpen(true);
+              }}
+              onElementSelected={(path, styles) => {
+                // Bridge sends kebab-case (from getComputedStyle); StyleEditor uses camelCase.
+                // Store both forms so reads & edits both work.
+                const merged: Record<string, string> = {};
+                for (const [k, v] of Object.entries(styles)) {
+                  merged[k] = v;
+                  merged[k.replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = v;
+                }
+                setSelectedElementPath(path);
+                setSelectedElementStyles(merged);
+                setTab('style');
+              }}
+            />
+          )}
         </div>
       </main>
 
