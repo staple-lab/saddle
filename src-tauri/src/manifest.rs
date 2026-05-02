@@ -2,6 +2,8 @@
 //! and variants Saddle shows in the gallery.
 
 use serde::{Deserialize, Serialize};
+use std::fs;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Manifest {
@@ -214,6 +216,28 @@ fn slugify(input: &str) -> String {
         return format!("c-{:x}", hash);
     }
     out
+}
+
+pub fn manifest_path(project_root: &Path) -> PathBuf {
+    project_root.join("saddle.manifest.json")
+}
+
+pub fn read_manifest_from_disk(project_root: &Path) -> Result<Manifest, ManifestError> {
+    let path = manifest_path(project_root);
+    if !path.exists() {
+        return Err(ManifestError::NotFound(path.to_string_lossy().to_string()));
+    }
+    let content = fs::read_to_string(&path).map_err(|e| ManifestError::Io(e.to_string()))?;
+    parse_manifest(&content)
+}
+
+pub fn write_manifest_to_disk(project_root: &Path, manifest: &Manifest) -> Result<(), ManifestError> {
+    let path = manifest_path(project_root);
+    let tmp = path.with_extension("json.tmp");
+    let body = serialize_manifest(manifest);
+    fs::write(&tmp, body).map_err(|e| ManifestError::Io(e.to_string()))?;
+    fs::rename(&tmp, &path).map_err(|e| ManifestError::Io(e.to_string()))?;
+    Ok(())
 }
 
 #[cfg(test)]

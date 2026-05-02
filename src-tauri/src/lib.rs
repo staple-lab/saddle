@@ -120,6 +120,41 @@ fn watch_project(app_handle: tauri::AppHandle, project_root: String) -> Result<(
     start_watching(app_handle, project_root)
 }
 
+#[derive(serde::Serialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+enum ReadManifestError {
+    NotFound { path: String },
+    InvalidJson { message: String },
+    UnsupportedVersion { version: u32 },
+    ValidationError { message: String },
+    Io { message: String },
+}
+
+impl From<manifest::ManifestError> for ReadManifestError {
+    fn from(e: manifest::ManifestError) -> Self {
+        match e {
+            manifest::ManifestError::NotFound(p) => Self::NotFound { path: p },
+            manifest::ManifestError::InvalidJson(m) => Self::InvalidJson { message: m },
+            manifest::ManifestError::UnsupportedVersion(v) => Self::UnsupportedVersion { version: v },
+            manifest::ManifestError::ValidationError(m) => Self::ValidationError { message: m },
+            manifest::ManifestError::Io(m) => Self::Io { message: m },
+        }
+    }
+}
+
+#[tauri::command]
+fn read_manifest(project_root: String) -> Result<manifest::Manifest, ReadManifestError> {
+    manifest::read_manifest_from_disk(std::path::Path::new(&project_root)).map_err(Into::into)
+}
+
+#[tauri::command]
+fn write_manifest(project_root: String, manifest_json: String) -> Result<(), String> {
+    let manifest: manifest::Manifest = serde_json::from_str(&manifest_json)
+        .map_err(|e| format!("Invalid manifest JSON: {}", e))?;
+    manifest::write_manifest_to_disk(std::path::Path::new(&project_root), &manifest)
+        .map_err(|e| format!("{}", e))
+}
+
 #[tauri::command]
 async fn spawn_dev_server(app: tauri::AppHandle, project_root: String) -> Result<String, String> {
     use tauri::Emitter;
@@ -256,7 +291,9 @@ pub fn run() {
             build_package,
             watch_project,
             spawn_dev_server,
-            kill_dev_server
+            kill_dev_server,
+            read_manifest,
+            write_manifest
         ])
         .on_window_event(|_window, event| {
             if let tauri::WindowEvent::CloseRequested { .. } | tauri::WindowEvent::Destroyed = event {
