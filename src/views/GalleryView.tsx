@@ -9,7 +9,7 @@ import { ExportView } from './ExportView';
 import { HierarchyView } from './HierarchyView';
 import { DashboardView } from './DashboardView';
 import { TokensView } from './TokensView';
-import { loadProject, loadGlobalConfig, watchProject, detectViteSetup, writeSaddleRuntime, spawnDevServer, killDevServer } from '../lib/tauri';
+import { loadProject, loadGlobalConfig, watchProject, detectViteSetup, writeSaddleRuntime, spawnDevServer, killDevServer, readManifest } from '../lib/tauri';
 import type { DevServerStatus } from './DashboardView';
 import { loadTokensFromConfig } from '../tokens/tokens';
 import { listen } from '@tauri-apps/api/event';
@@ -107,20 +107,34 @@ export function GalleryView() {
   };
 
   const handleLoadProject = async () => {
-    // Tear down any previous dev server before loading a new project.
     try { await killDevServer(); } catch {}
     setDevServerStatus({ kind: 'idle' });
     try {
       const selectedPath = await open({
-        directory: true,
-        multiple: false,
+        directory: true, multiple: false,
         title: 'Select Project Root Directory',
       });
 
       if (!selectedPath) return;
 
       setProjectRoot(selectedPath as string);
-      setShowWizard(true);
+
+      // Try to load manifest. If it doesn't exist, open the picker.
+      try {
+        await readManifest(selectedPath as string);
+        // Manifest exists — load directly without picker.
+        await handleWizardComplete();
+      } catch (err: any) {
+        if (err && typeof err === 'object' && err.kind === 'not_found') {
+          setShowWizard(true);
+        } else {
+          // Manifest exists but is broken (invalid_json, unsupported_version, etc).
+          // Phase 10 adds a dedicated error UI; for now, still open the picker so the
+          // user has a path to recovery.
+          console.error('Manifest read failed:', err);
+          setShowWizard(true);
+        }
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to open file picker');
     }
