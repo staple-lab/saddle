@@ -81,6 +81,8 @@ function Node({
           color: isSelected ? 'var(--color-accent)' : 'var(--color-fg)',
           cursor: 'pointer',
           borderRadius: 3,
+          overflow: 'hidden',
+          whiteSpace: 'nowrap',
         }}
       >
         {hasChildren ? (
@@ -120,8 +122,23 @@ function Node({
           </span>
         )}
         {node.classes && node.classes.length > 0 && (
-          <span style={{ color: '#16a34a' }}>
-            .{node.classes.join('.')}
+          <span
+            title={node.classes.join(' ')}
+            style={{
+              color: '#16a34a',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              minWidth: 0,
+              flex: '0 1 auto',
+            }}
+          >
+            .{node.classes.slice(0, 2).join('.')}
+            {node.classes.length > 2 && (
+              <span style={{ color: 'var(--color-fg-subtle)', marginLeft: 2 }}>
+                +{node.classes.length - 2}
+              </span>
+            )}
           </span>
         )}
         <span style={{ color: isSelected ? 'var(--color-accent)' : '#a855f7' }}>&gt;</span>
