@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { Manifest, ManifestComponent, ManifestVariant } from '../types/manifest';
 import { scanProjectDirectory, type FileInfo } from '../lib/tauri';
 
 export interface PickerProps {
@@ -329,4 +330,71 @@ function TreeNodes(props: TreeNodesProps) {
 function collectFiles(n: TreeNode): string[] {
   if (!n.isDir) return [n.rel];
   return n.children.flatMap(collectFiles);
+}
+
+// ---- buildManifestFromSelections ----
+
+const COMPONENT_NAME_FROM_DIR = (dir: string): string => dir.split('/').pop() ?? dir;
+
+const VARIANT_NAME_FROM_FILE = (componentName: string, fileName: string): string => {
+  const base = fileName.replace(/\.(tsx|jsx|ts|js)$/, '');
+  if (base === 'index' || base === componentName) return 'Default';
+  if (base.startsWith(componentName + '.')) return base.slice(componentName.length + 1);
+  return base;
+};
+
+const slugify = (input: string): string =>
+  input
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+export function buildManifestFromSelections(
+  selectedRelative: string[],
+  existing: Manifest | null,
+): Manifest {
+  const byDir = new Map<string, string[]>();
+  for (const rel of selectedRelative) {
+    const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+    if (!byDir.has(dir)) byDir.set(dir, []);
+    byDir.get(dir)!.push(rel);
+  }
+
+  const components: ManifestComponent[] = [];
+  for (const [dir, files] of byDir) {
+    const componentName = COMPONENT_NAME_FROM_DIR(dir);
+    const variants: ManifestVariant[] = [];
+    for (const fullRel of files) {
+      const fileName = fullRel.slice(fullRel.lastIndexOf('/') + 1);
+      const variantName = VARIANT_NAME_FROM_FILE(componentName, fileName);
+      const docRel = fullRel.replace(/\.(tsx|jsx|ts|js)$/, '.md');
+
+      const existingVariant = existing?.components
+        .find((c) => c.directory === dir)?.variants
+        .find((v) => v.file === fullRel);
+
+      variants.push({
+        id: existingVariant?.id ?? slugify(`${componentName}-${variantName}`),
+        name: variantName,
+        file: fullRel,
+        doc: docRel,
+      });
+    }
+
+    const existingComponent = existing?.components.find((c) => c.directory === dir);
+    components.push({
+      id: existingComponent?.id ?? slugify(componentName),
+      name: componentName,
+      directory: dir,
+      variants: variants.sort((a, b) => a.name.localeCompare(b.name)),
+    });
+  }
+
+  components.sort((a, b) => a.name.localeCompare(b.name));
+
+  return {
+    $schema: 'saddle/manifest/v1',
+    version: 1,
+    components,
+  };
 }
