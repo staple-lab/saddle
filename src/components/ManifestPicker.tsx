@@ -400,6 +400,29 @@ export function buildManifestFromSelections(
 
   components.sort((a, b) => a.name.localeCompare(b.name));
 
+  // De-duplicate component ids — only mutate ids that we freshly slugified.
+  const seen = new Set<string>();
+  for (const c of components) {
+    if (!seen.has(c.id)) {
+      seen.add(c.id);
+      continue;
+    }
+    // Collision. If this id was inherited from `existing`, leave it; otherwise suffix.
+    const wasInherited = existing?.components.some(
+      (ec) => ec.directory === c.directory && ec.id === c.id,
+    );
+    if (wasInherited) {
+      // Inherited id collides with another inherited id — that's a pre-existing manifest bug.
+      // Leave both; Rust validator will reject. Don't mask the problem here.
+      continue;
+    }
+    const base = c.id;
+    let n = 2;
+    while (seen.has(`${base}-${n}`)) n += 1;
+    c.id = `${base}-${n}`;
+    seen.add(c.id);
+  }
+
   return {
     $schema: 'saddle/manifest/v1',
     version: 1,
