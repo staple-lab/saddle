@@ -288,6 +288,12 @@
       case 'saddle:set-element-state':
         setElementState(msg.path || [], msg.state);
         break;
+      case 'saddle:set-props':
+        window.__SADDLE_PROPS__ = msg.props || {};
+        try {
+          window.dispatchEvent(new CustomEvent('saddle:props-changed', { detail: msg.props || {} }));
+        } catch (err) {}
+        break;
     }
   });
 

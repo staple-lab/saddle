@@ -37,6 +37,7 @@ export type IframeNode = {
 export type ComponentPreviewHandle = {
   setElementStyles: (path: number[], styles: Record<string, string>) => void;
   setElementState: (path: number[], state: string) => void;
+  setProps: (props: Record<string, string>) => void;
 };
 
 interface ComponentPreviewProps {
@@ -499,6 +500,12 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
     setElementState(path, state) {
       iframeRef.current?.contentWindow?.postMessage(
         { type: 'saddle:set-element-state', path, state },
+        '*'
+      );
+    },
+    setProps(props) {
+      iframeRef.current?.contentWindow?.postMessage(
+        { type: 'saddle:set-props', props },
         '*'
       );
     },

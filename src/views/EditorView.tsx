@@ -20,10 +20,11 @@ interface EditorViewProps {
   onOpenPicker: () => void;
 }
 
-type Tab = 'style' | 'ai' | 'metadata';
+type Tab = 'style' | 'props' | 'ai' | 'metadata';
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'style', label: 'Style' },
+  { id: 'props', label: 'Props' },
   { id: 'ai', label: 'AI' },
   { id: 'metadata', label: 'Metadata' },
 ];
@@ -74,6 +75,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
   const [tree, setTree] = useState<IframeNode | null>(null);
+  const [variantProps, setVariantProps] = useState<Array<{ key: string; value: string }>>([]);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
   const previewRef = useRef<ComponentPreviewHandle | null>(null);
   const [newVariantOpen, setNewVariantOpen] = useState(false);
@@ -91,6 +93,20 @@ export function EditorView({ components, component, onSelectComponent, devServer
   useEffect(() => {
     setSelectedVariantIndex(0);
   }, [component.directory]);
+
+  // Reset prop overrides when the variant changes (each variant starts clean).
+  useEffect(() => {
+    setVariantProps([]);
+  }, [selectedVariantIndex, component.directory]);
+
+  // Push prop overrides to the iframe whenever they change.
+  useEffect(() => {
+    const dict: Record<string, string> = {};
+    for (const { key, value } of variantProps) {
+      if (key.trim()) dict[key.trim()] = value;
+    }
+    previewRef.current?.setProps?.(dict);
+  }, [variantProps]);
 
   // camelCase → kebab-case so the visible value in the field matches what the bridge
   // applies to the live element.
@@ -374,6 +390,13 @@ export function EditorView({ components, component, onSelectComponent, devServer
             )
           )}
 
+          {tab === 'props' && (
+            <PropsPanel
+              rows={variantProps}
+              onChange={setVariantProps}
+            />
+          )}
+
           {tab === 'ai' && (
             selectedElementPath ? (
               <AIGuidanceEditor
@@ -496,6 +519,84 @@ export function EditorView({ components, component, onSelectComponent, devServer
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function PropsPanel({
+  rows,
+  onChange,
+}: {
+  rows: Array<{ key: string; value: string }>;
+  onChange: (next: Array<{ key: string; value: string }>) => void;
+}) {
+  const updateRow = (idx: number, patch: Partial<{ key: string; value: string }>) => {
+    const next = rows.map((r, i) => (i === idx ? { ...r, ...patch } : r));
+    onChange(next);
+  };
+  const removeRow = (idx: number) => onChange(rows.filter((_, i) => i !== idx));
+  const addRow = () => onChange([...rows, { key: '', value: '' }]);
+
+  return (
+    <div style={{ padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', lineHeight: 1.5 }}>
+        Add prop overrides for this variant. Values stream live to the running component
+        via <code style={{ fontFamily: 'var(--font-code)' }}>window.__SADDLE_PROPS__</code>.
+        Your story file needs to subscribe (see <code style={{ fontFamily: 'var(--font-code)' }}>useSaddleProps()</code>).
+      </div>
+      {rows.length === 0 && (
+        <div style={{ fontSize: 12, color: 'var(--color-fg-subtle)', fontStyle: 'italic', padding: '8px 0' }}>
+          No overrides yet.
+        </div>
+      )}
+      {rows.map((row, idx) => (
+        <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            value={row.key}
+            onChange={(e) => updateRow(idx, { key: e.target.value })}
+            placeholder="prop"
+            style={{
+              flex: '0 0 35%', height: 28, padding: '0 8px',
+              border: '1px solid var(--color-border)', borderRadius: 6,
+              fontSize: 12, fontFamily: 'var(--font-code)',
+            }}
+          />
+          <input
+            value={row.value}
+            onChange={(e) => updateRow(idx, { value: e.target.value })}
+            placeholder="value"
+            style={{
+              flex: 1, height: 28, padding: '0 8px',
+              border: '1px solid var(--color-border)', borderRadius: 6,
+              fontSize: 12, fontFamily: 'var(--font-code)',
+            }}
+          />
+          <button
+            onClick={() => removeRow(idx)}
+            style={{
+              flex: '0 0 28px', height: 28, padding: 0,
+              background: 'transparent', border: '1px solid var(--color-border)',
+              borderRadius: 6, fontSize: 14, color: 'var(--color-fg-muted)',
+              cursor: 'pointer',
+            }}
+            title="Remove"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      <button
+        onClick={addRow}
+        style={{
+          height: 30, padding: '0 12px',
+          background: 'transparent', border: '1px dashed var(--color-border)',
+          borderRadius: 6, fontSize: 12, fontWeight: 500,
+          color: 'var(--color-fg)', cursor: 'pointer',
+          alignSelf: 'flex-start',
+        }}
+      >
+        + Add prop
+      </button>
     </div>
   );
 }
