@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Component } from '../types/component';
 import { ComponentDropdown } from '../components/ComponentDropdown';
-import { CodeEditor } from '../components/CodeEditor';
 import { StyleEditor } from '../components/StyleEditor';
-import { ComponentPreview, type ComponentPreviewHandle } from '../components/ComponentPreview';
+import { ComponentPreview, type ComponentPreviewHandle, type IframeNode } from '../components/ComponentPreview';
 import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { ResizablePanel } from '../components/ResizablePanel';
+import { ElementTree } from '../components/ElementTree';
 import { updateTokens, writeComponentFile, readComponentFile } from '../lib/tauri';
 import { DriftPill } from '../components/DriftPill';
 
@@ -73,6 +73,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
   const [tab, setTab] = useState<Tab>('style');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
+  const [tree, setTree] = useState<IframeNode | null>(null);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
   const previewRef = useRef<ComponentPreviewHandle | null>(null);
   const [newVariantOpen, setNewVariantOpen] = useState(false);
@@ -192,8 +193,8 @@ export function EditorView({ components, component, onSelectComponent, devServer
   return (
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
 
-      {/* Left Panel - Variant source markup (read-only) */}
-      <ResizablePanel defaultWidth={480} minWidth={280} maxWidth={640} side="left">
+      {/* Left Panel - Live DOM tree (Chrome DevTools-style markup) */}
+      <ResizablePanel defaultWidth={420} minWidth={260} maxWidth={640} side="left">
         <div style={{
           height: 38, padding: '0 14px',
           display: 'flex', alignItems: 'center',
@@ -202,14 +203,13 @@ export function EditorView({ components, component, onSelectComponent, devServer
           fontSize: 11, color: 'var(--color-fg-muted)',
           fontFamily: 'var(--font-code)',
         }}>
-          {selectedVariant.filePath.split('/').pop()}
+          Elements
         </div>
-        <div style={{ flex: 1, minHeight: 0 }}>
-          <CodeEditor
-            value={selectedVariant.code}
-            language="typescript"
-            readOnly={true}
-            onChange={() => {}}
+        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#fff' }}>
+          <ElementTree
+            tree={tree}
+            selectedPath={selectedElementPath}
+            onSelect={(path) => setSelectedElementPath(path)}
           />
         </div>
       </ResizablePanel>
@@ -270,6 +270,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
               componentName={component.name}
               variantName={selectedVariant.variantName}
               selectedPath={selectedElementPath}
+              onTree={setTree}
               onCanvasClick={clearSelection}
               onNewVariant={() => {
                 console.log('[new-variant] handler fired in EditorView, opening modal');

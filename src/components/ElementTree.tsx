@@ -63,8 +63,14 @@ function Node({
     <div>
       <div
         onClick={() => onSelect(path)}
-        onMouseEnter={() => onHover?.(path)}
-        onMouseLeave={() => onHover?.(null)}
+        onMouseEnter={(e) => {
+          onHover?.(path);
+          if (!isSelected) e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
+        }}
+        onMouseLeave={(e) => {
+          onHover?.(null);
+          if (!isSelected) e.currentTarget.style.background = 'transparent';
+        }}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -75,12 +81,6 @@ function Node({
           color: isSelected ? 'var(--color-accent)' : 'var(--color-fg)',
           cursor: 'pointer',
           borderRadius: 3,
-        }}
-        onMouseEnterCapture={(e) => {
-          if (!isSelected) e.currentTarget.style.background = 'rgba(0,0,0,0.04)';
-        }}
-        onMouseLeaveCapture={(e) => {
-          if (!isSelected) e.currentTarget.style.background = 'transparent';
         }}
       >
         {hasChildren ? (
