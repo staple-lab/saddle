@@ -21,10 +21,9 @@ interface EditorViewProps {
   onOpenPicker: () => void;
 }
 
-type Tab = 'doc' | 'style' | 'code' | 'ai' | 'metadata';
+type Tab = 'style' | 'code' | 'ai' | 'metadata';
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'doc', label: 'Doc' },
   { id: 'style', label: 'Style' },
   { id: 'code', label: 'Code' },
   { id: 'ai', label: 'AI' },
@@ -73,7 +72,7 @@ function cloneVariantSource(originalSource: string, componentName: string, varia
 
 export function EditorView({ components, component, onSelectComponent, devServerUrl, driftAdded, driftRemoved, onOpenPicker }: EditorViewProps) {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [tab, setTab] = useState<Tab>('doc');
+  const [tab, setTab] = useState<Tab>('style');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
@@ -104,7 +103,6 @@ export function EditorView({ components, component, onSelectComponent, devServer
     }
     setSelectedElementPath(null);
     setSelectedElementStyles(null);
-    setTab('doc');
   };
 
   const submitNewVariant = async () => {
@@ -196,6 +194,29 @@ export function EditorView({ components, component, onSelectComponent, devServer
   return (
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
 
+      {/* Left Panel - Markdown doc */}
+      <ResizablePanel defaultWidth={420} minWidth={280} maxWidth={640} side="left">
+        <div style={{
+          height: 38, padding: '0 14px',
+          display: 'flex', alignItems: 'center',
+          borderBottom: '1px solid var(--color-border)',
+          background: '#fff', flexShrink: 0,
+          fontSize: 11, color: 'var(--color-fg-muted)',
+          fontFamily: 'var(--font-code)',
+        }}>
+          {selectedVariant.docPath.split('/').pop()}
+        </div>
+        <div style={{ flex: 1, minHeight: 0, display: 'flex' }}>
+          <MarkdownEditor
+            filePath={selectedVariant.docPath}
+            initialContent={selectedVariant.docContent}
+            onSave={async (path, content) => {
+              await writeComponentFile(path, content);
+            }}
+          />
+        </div>
+      </ResizablePanel>
+
       {/* Center Stage - Preview */}
       <main
         onClick={(e) => { if (e.target === e.currentTarget) clearSelection(); }}
@@ -250,6 +271,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
               liveTokens={localTokens}
               devServerUrl={devServerUrl}
               componentName={component.name}
+              variantName={selectedVariant.variantName}
               selectedPath={selectedElementPath}
               onCanvasClick={clearSelection}
               onNewVariant={() => {
@@ -268,7 +290,6 @@ export function EditorView({ components, component, onSelectComponent, devServer
                 }
                 setSelectedElementPath(path);
                 setSelectedElementStyles(merged);
-                setTab('style');
               }}
             />
           )}
@@ -337,17 +358,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
         </header>
 
         {/* Tab Content */}
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
-          {tab === 'doc' && (
-            <MarkdownEditor
-              filePath={selectedVariant.docPath}
-              initialContent={selectedVariant.docContent}
-              onSave={async (path, content) => {
-                await writeComponentFile(path, content);
-              }}
-            />
-          )}
-
+        <div style={{ flex: 1, overflowY: 'auto' }}>
           {tab === 'style' && (
             selectedElementPath ? (
               <StyleEditor

@@ -46,6 +46,7 @@ interface ComponentPreviewProps {
   breakpoints?: Breakpoint[];
   devServerUrl?: string;
   componentName?: string;
+  variantName?: string;
   selectedPath?: number[] | null;
   onTree?: (tree: IframeNode | null) => void;
   onElementSelected?: (path: number[], styles: Record<string, string>) => void;
@@ -475,6 +476,7 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
   liveTokens,
   devServerUrl,
   componentName,
+  variantName,
   breakpoints,
   selectedPath,
   onTree,
@@ -529,9 +531,13 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
     const params = new URLSearchParams(existingQuery);
     params.set('embed', '1');
     const query = params.toString();
-    const fragment = componentName ? `#${slugify(componentName)}` : '';
+    const fragment = componentName
+      ? (variantName
+          ? `#${slugify(componentName)}/${slugify(variantName)}`
+          : `#${slugify(componentName)}`)
+      : '';
     return `${cleanPath}/${query ? `?${query}` : ''}${fragment}`;
-  }, [devServerUrl, componentName]);
+  }, [devServerUrl, componentName, variantName]);
 
   // Listen for bridge messages
   useEffect(() => {
