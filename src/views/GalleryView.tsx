@@ -305,6 +305,22 @@ export function GalleryView() {
         </div>
       );
     }
+    if (project.components.length === 0) {
+      return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+          <div style={{ textAlign: 'center', maxWidth: 360 }}>
+            <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--color-fg)' }}>No components in manifest</h2>
+            <p style={{ margin: '8px 0 16px', fontSize: 13, color: 'var(--color-fg-muted)' }}>Open the picker to add components to your gallery.</p>
+            <button
+              onClick={() => setShowWizard(true)}
+              style={{ height: 32, padding: '0 16px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}
+            >
+              Open picker
+            </button>
+          </div>
+        </div>
+      );
+    }
     if (view === 'export') {
       return <ExportView project={project} projectRoot={projectRoot} onBack={() => setView('components')} />;
     }
