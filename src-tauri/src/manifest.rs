@@ -46,7 +46,12 @@ pub enum ManifestError {
 }
 
 pub fn parse_manifest(content: &str) -> Result<Manifest, ManifestError> {
-    serde_json::from_str::<Manifest>(content).map_err(|e| ManifestError::InvalidJson(e.to_string()))
+    let manifest: Manifest = serde_json::from_str(content)
+        .map_err(|e| ManifestError::InvalidJson(e.to_string()))?;
+    if manifest.version != 1 {
+        return Err(ManifestError::UnsupportedVersion(manifest.version));
+    }
+    Ok(manifest)
 }
 
 pub fn serialize_manifest(manifest: &Manifest) -> String {
@@ -81,5 +86,14 @@ mod tests {
         let json = serialize_manifest(&original);
         let parsed = parse_manifest(&json).expect("roundtrip parse");
         assert_eq!(parsed, original);
+    }
+
+    #[test]
+    fn parse_rejects_higher_version() {
+        let json = r#"{"$schema":"saddle/manifest/v1","version":2,"components":[]}"#;
+        match parse_manifest(json) {
+            Err(ManifestError::UnsupportedVersion(2)) => {}
+            other => panic!("expected UnsupportedVersion(2), got {:?}", other),
+        }
     }
 }
