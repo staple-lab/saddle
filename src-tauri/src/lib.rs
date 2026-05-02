@@ -8,6 +8,7 @@ mod dedup_analyzer;
 mod file_watcher;
 mod saddle_runtime;
 mod dev_server;
+mod manifest;
 
 use file_operations::{scan_directory, read_file, update_component_tokens, FileInfo, detect_vite_setup, ViteSetup};
 use frontmatter_parser::{parse_frontmatter, ParsedFile};
