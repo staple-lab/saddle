@@ -1,5 +1,6 @@
 import { invoke } from '@tauri-apps/api/core';
 import type { Component, ProjectStructure } from '../types/component';
+import type { Manifest } from '../types/manifest';
 
 export interface FileInfo {
   path: string;
@@ -175,8 +176,12 @@ export async function loadProject(rootPath: string): Promise<ProjectStructure> {
         docContent = await readComponentFile(fullDocPath);
       } catch {
         // Doc doesn't exist yet — seed it.
-        const description = parsed.frontmatter?.description as string | undefined;
-        const usage = parsed.frontmatter?.usage as string | undefined;
+        const description = typeof parsed.frontmatter?.description === 'string'
+          ? parsed.frontmatter.description
+          : undefined;
+        const usage = typeof parsed.frontmatter?.usage === 'string'
+          ? parsed.frontmatter.usage
+          : undefined;
         docContent = seedDocTemplate(mc.name, mv.name, description, usage);
         try {
           await writeComponentFile(fullDocPath, docContent);
@@ -219,8 +224,6 @@ function seedDocTemplate(componentName: string, variantName: string, description
   const usageText = usage?.trim() || 'Document when and how to use this variant.';
   return `${heading}\n${descBlock}\n## Usage\n\n${usageText}\n`;
 }
-
-import type { Manifest } from '../types/manifest';
 
 export async function readManifest(projectRoot: string): Promise<Manifest> {
   return invoke<Manifest>('read_manifest', { projectRoot });
