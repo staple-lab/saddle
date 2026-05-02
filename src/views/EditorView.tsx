@@ -7,6 +7,7 @@ import { ComponentPreview, type ComponentPreviewHandle } from '../components/Com
 import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { ResizablePanel } from '../components/ResizablePanel';
 import { updateTokens, writeComponentFile, readComponentFile } from '../lib/tauri';
+import { MarkdownEditor } from '../components/MarkdownEditor';
 
 interface EditorViewProps {
   components: Component[];
@@ -16,9 +17,10 @@ interface EditorViewProps {
   devServerUrl?: string;
 }
 
-type Tab = 'style' | 'code' | 'ai' | 'metadata';
+type Tab = 'doc' | 'style' | 'code' | 'ai' | 'metadata';
 
 const TABS: { id: Tab; label: string }[] = [
+  { id: 'doc', label: 'Doc' },
   { id: 'style', label: 'Style' },
   { id: 'code', label: 'Code' },
   { id: 'ai', label: 'AI' },
@@ -67,7 +69,7 @@ function cloneVariantSource(originalSource: string, componentName: string, varia
 
 export function EditorView({ components, component, onSelectComponent, devServerUrl }: EditorViewProps) {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-  const [tab, setTab] = useState<Tab>('style');
+  const [tab, setTab] = useState<Tab>('doc');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
@@ -98,6 +100,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
     }
     setSelectedElementPath(null);
     setSelectedElementStyles(null);
+    setTab('doc');
   };
 
   const submitNewVariant = async () => {
@@ -248,15 +251,14 @@ export function EditorView({ components, component, onSelectComponent, devServer
               }
               setSelectedElementPath(path);
               setSelectedElementStyles(merged);
-              // Don't reset the active tab — preserve whichever tab the user picked last.
+              setTab('style');
             }}
           />
         </div>
       </main>
 
-      {/* Right Panel - Inspector (resizable). Only shows when an element is selected. */}
-      {selectedElementPath && (
-      <ResizablePanel defaultWidth={320} minWidth={240} maxWidth={520} side="right">
+      {/* Right Panel - Inspector (resizable). Always visible. */}
+      <ResizablePanel defaultWidth={480} minWidth={320} maxWidth={720} side="right">
         {/* Component / variant header */}
         <div
           style={{
@@ -317,72 +319,71 @@ export function EditorView({ components, component, onSelectComponent, devServer
         </header>
 
         {/* Tab Content */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
-          {tab === 'style' && (
-            <StyleEditor
-              tokens={selectedElementStyles ?? localTokens}
-              code={selectedVariant.code}
-              onTokenChange={handleTokenChange}
-              onStateChange={(state) => {
-                if (selectedElementPath) {
-                  previewRef.current?.setElementState(selectedElementPath, state);
-                }
+        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {tab === 'doc' && (
+            <MarkdownEditor
+              filePath={selectedVariant.docPath}
+              initialContent={selectedVariant.docContent}
+              onSave={async (path, content) => {
+                await writeComponentFile(path, content);
               }}
             />
+          )}
+
+          {tab === 'style' && (
+            selectedElementPath ? (
+              <StyleEditor
+                tokens={selectedElementStyles ?? localTokens}
+                code={selectedVariant.code}
+                onTokenChange={handleTokenChange}
+                onStateChange={(state) => {
+                  if (selectedElementPath) {
+                    previewRef.current?.setElementState(selectedElementPath, state);
+                  }
+                }}
+              />
+            ) : (
+              <EmptyTab message="Select an element in the preview to inspect its styles." />
+            )
           )}
 
           {tab === 'code' && (
-            <div style={{ padding: 16, display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
-              <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>
-                {selectedVariant.filePath.split('/').pop()}
+            selectedElementPath ? (
+              <div style={{ padding: 16, display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
+                <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>
+                  {selectedVariant.filePath.split('/').pop()}
+                </div>
+                <div style={{ flex: 1, minHeight: 400 }}>
+                  <CodeEditor value={selectedVariant.code} language="typescript" readOnly={false} onChange={() => {}} />
+                </div>
               </div>
-              <div style={{ flex: 1, minHeight: 400 }}>
-                <CodeEditor
-                  value={selectedVariant.code}
-                  language="typescript"
-                  readOnly={false}
-                  onChange={() => {}}
-                />
-              </div>
-            </div>
+            ) : (
+              <EmptyTab message="Select an element in the preview to view its source." />
+            )
           )}
 
           {tab === 'ai' && (
-            <AIGuidanceEditor
-              frontmatter={selectedVariant.frontmatter || {}}
-              onUpdate={(field, value) => {
-                console.log(`AI guidance: ${field} = ${value}`);
-              }}
-            />
+            selectedElementPath ? (
+              <AIGuidanceEditor
+                frontmatter={selectedVariant.frontmatter || {}}
+                onUpdate={(field, value) => {
+                  console.log(`AI guidance: ${field} = ${value}`);
+                }}
+              />
+            ) : (
+              <EmptyTab message="Select an element in the preview to edit AI guidance." />
+            )
           )}
 
-          {tab === 'metadata' && selectedVariant.frontmatter && (
-            <div style={{ padding: 16 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {selectedVariant.frontmatter.name && (
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', marginBottom: 4, fontWeight: 600 }}>Name</div>
-                    <div style={{ fontSize: 13, color: 'var(--color-fg)' }}>{selectedVariant.frontmatter.name}</div>
-                  </div>
-                )}
-                {selectedVariant.frontmatter.description && (
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', marginBottom: 4, fontWeight: 600 }}>Description</div>
-                    <div style={{ fontSize: 13, color: 'var(--color-fg)', lineHeight: 1.5 }}>{selectedVariant.frontmatter.description}</div>
-                  </div>
-                )}
-                {selectedVariant.frontmatter.usage && (
-                  <div>
-                    <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', marginBottom: 4, fontWeight: 600 }}>Usage</div>
-                    <div style={{ fontSize: 13, color: 'var(--color-fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{selectedVariant.frontmatter.usage}</div>
-                  </div>
-                )}
-              </div>
-            </div>
+          {tab === 'metadata' && (
+            selectedElementPath && selectedVariant.frontmatter ? (
+              <MetadataPanel frontmatter={selectedVariant.frontmatter} />
+            ) : (
+              <EmptyTab message="Select an element in the preview to view metadata." />
+            )
           )}
         </div>
       </ResizablePanel>
-      )}
 
       {newVariantOpen && (
         <div
@@ -483,6 +484,41 @@ export function EditorView({ components, component, onSelectComponent, devServer
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+function EmptyTab({ message }: { message: string }) {
+  return (
+    <div style={{ padding: 24, fontSize: 12, color: 'var(--color-fg-muted)', textAlign: 'center' }}>
+      {message}
+    </div>
+  );
+}
+
+function MetadataPanel({ frontmatter }: { frontmatter: any }) {
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {frontmatter.name && (
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', marginBottom: 4, fontWeight: 600 }}>Name</div>
+            <div style={{ fontSize: 13, color: 'var(--color-fg)' }}>{frontmatter.name}</div>
+          </div>
+        )}
+        {frontmatter.description && (
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', marginBottom: 4, fontWeight: 600 }}>Description</div>
+            <div style={{ fontSize: 13, color: 'var(--color-fg)', lineHeight: 1.5 }}>{frontmatter.description}</div>
+          </div>
+        )}
+        {frontmatter.usage && (
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--color-fg-muted)', marginBottom: 4, fontWeight: 600 }}>Usage</div>
+            <div style={{ fontSize: 13, color: 'var(--color-fg)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{frontmatter.usage}</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
