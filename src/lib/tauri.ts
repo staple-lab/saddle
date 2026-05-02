@@ -217,12 +217,30 @@ export async function loadProject(rootPath: string): Promise<ProjectStructure> {
 
 function seedDocTemplate(componentName: string, variantName: string, description?: string, usage?: string): string {
   const heading = `# ${componentName} · ${variantName}`;
-  if (!description && !usage) {
-    return `${heading}\n`;
-  }
-  const descBlock = description ? `\n${description.trim()}\n` : '';
-  const usageText = usage?.trim() || 'Document when and how to use this variant.';
-  return `${heading}\n${descBlock}\n## Usage\n\n${usageText}\n`;
+  const descText = description?.trim() || `The ${componentName} \`${variantName}\` variant.`;
+  const usageText = usage?.trim() || `Use this variant when you need a ${variantName.toLowerCase()} ${componentName.toLowerCase()}.`;
+  const variantProp = variantName.toLowerCase() === 'default' ? '' : ` variant="${variantName.toLowerCase()}"`;
+  const example = `<${componentName}${variantProp}>${variantName}</${componentName}>`;
+  return [
+    heading,
+    '',
+    descText,
+    '',
+    '## Example',
+    '',
+    '```tsx',
+    example,
+    '```',
+    '',
+    '## Usage',
+    '',
+    usageText,
+    '',
+    '## Notes',
+    '',
+    '- Add anything useful for AI tools or teammates here.',
+    '',
+  ].join('\n');
 }
 
 export async function readManifest(projectRoot: string): Promise<Manifest> {

@@ -521,15 +521,6 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
     iframeRef.current.contentWindow.postMessage({ type: 'saddle:set-tokens', tokens }, '*');
   }, [tokenStore, bridgeConnected]);
 
-  // Push variant name to the iframe whenever it changes (after the bridge is up).
-  useEffect(() => {
-    if (!iframeRef.current?.contentWindow || !bridgeConnected) return;
-    iframeRef.current.contentWindow.postMessage(
-      { type: 'saddle:set-variant', variantName: variantName ?? '' },
-      '*',
-    );
-  }, [variantName, bridgeConnected]);
-
   const iframeUrl = useMemo(() => {
     if (!devServerUrl) return '';
     // Strip any existing fragment so we can append our own; keep query string.
@@ -540,9 +531,13 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
     const params = new URLSearchParams(existingQuery);
     params.set('embed', '1');
     const query = params.toString();
-    const fragment = componentName ? `#${slugify(componentName)}` : '';
+    const fragment = componentName
+      ? (variantName
+          ? `#${slugify(componentName)}/${slugify(variantName)}`
+          : `#${slugify(componentName)}`)
+      : '';
     return `${cleanPath}/${query ? `?${query}` : ''}${fragment}`;
-  }, [devServerUrl, componentName]);
+  }, [devServerUrl, componentName, variantName]);
 
   // Listen for bridge messages
   useEffect(() => {
