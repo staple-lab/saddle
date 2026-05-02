@@ -9,7 +9,7 @@ import { ExportView } from './ExportView';
 import { HierarchyView } from './HierarchyView';
 import { DashboardView } from './DashboardView';
 import { TokensView } from './TokensView';
-import { loadProject, loadGlobalConfig, watchProject, detectViteSetup, writeSaddleRuntime, spawnDevServer, killDevServer, readManifest } from '../lib/tauri';
+import { loadProject, loadGlobalConfig, watchProject, detectViteSetup, writeSaddleRuntime, spawnDevServer, killDevServer, readManifest, readComponentFile, writeComponentFile } from '../lib/tauri';
 import type { DevServerStatus } from './DashboardView';
 import { loadTokensFromConfig } from '../tokens/tokens';
 import { listen } from '@tauri-apps/api/event';
@@ -72,6 +72,7 @@ export function GalleryView() {
   const [tokenGroup, setTokenGroup] = useState<TokenGroup>('all');
   const [devServerStatus, setDevServerStatus] = useState<DevServerStatus>({ kind: 'idle' });
   const [drift, setDrift] = useState<{ added: string[]; removed: string[] }>({ added: [], removed: [] });
+  const [manifestError, setManifestError] = useState<{ kind: string; message?: string; version?: number; path?: string } | null>(null);
 
   const addLog = (type: LogEntry['type'], message: string, source?: string) => {
     setLogs(prev => [...prev, { timestamp: new Date(), type, message, source }]);
@@ -130,17 +131,14 @@ export function GalleryView() {
       // Try to load manifest. If it doesn't exist, open the picker.
       try {
         await readManifest(selectedPath as string);
-        // Manifest exists — load directly without picker.
         await handleWizardComplete(selectedPath as string);
       } catch (err: any) {
         if (err && typeof err === 'object' && err.kind === 'not_found') {
           setShowWizard(true);
+        } else if (err && typeof err === 'object' && (err.kind === 'invalid_json' || err.kind === 'unsupported_version' || err.kind === 'validation_error' || err.kind === 'io')) {
+          setManifestError(err);
         } else {
-          // Manifest exists but is broken (invalid_json, unsupported_version, etc).
-          // Phase 10 adds a dedicated error UI; for now, still open the picker so the
-          // user has a path to recovery.
-          console.error('Manifest read failed:', err);
-          setShowWizard(true);
+          setError(`Manifest read failed: ${JSON.stringify(err)}`);
         }
       }
     } catch (err) {
@@ -205,6 +203,33 @@ export function GalleryView() {
   };
 
   const renderMainContent = () => {
+    if (manifestError) {
+      return (
+        <ManifestErrorScreen
+          error={manifestError}
+          projectRoot={projectRoot}
+          onResetAndRePick={async () => {
+            const ts = Math.floor(Date.now() / 1000);
+            try {
+              const raw = await readComponentFile(`${projectRoot}/saddle.manifest.json`);
+              await writeComponentFile(`${projectRoot}/saddle.manifest.json.bak-${ts}`, raw);
+            } catch (backupErr) {
+              console.error('manifest backup failed', backupErr);
+            }
+            setManifestError(null);
+            setShowWizard(true);
+          }}
+          onOpenInEditor={async () => {
+            try {
+              const { openPath } = await import('@tauri-apps/plugin-opener');
+              await openPath(`${projectRoot}/saddle.manifest.json`);
+            } catch (openErr) {
+              console.error('open in editor failed', openErr);
+            }
+          }}
+        />
+      );
+    }
     if (loading) {
       return (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
@@ -373,6 +398,47 @@ export function GalleryView() {
                 </div>
               )}
             </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface ManifestErrorScreenProps {
+  error: { kind: string; message?: string; version?: number };
+  projectRoot: string;
+  onResetAndRePick: () => Promise<void> | void;
+  onOpenInEditor: () => void;
+}
+
+function ManifestErrorScreen({ error, projectRoot, onResetAndRePick, onOpenInEditor }: ManifestErrorScreenProps) {
+  let title = 'Manifest error';
+  let body = '';
+  let allowReset = true;
+  if (error.kind === 'invalid_json') {
+    title = 'Manifest is not valid JSON';
+    body = `Manifest at ${projectRoot}/saddle.manifest.json could not be parsed. ${error.message ?? ''}`;
+  } else if (error.kind === 'unsupported_version') {
+    title = 'Manifest is from a newer Saddle';
+    body = `Manifest version ${error.version} is newer than this Saddle build supports. Upgrade Saddle to continue.`;
+    allowReset = false;
+  } else if (error.kind === 'validation_error') {
+    title = 'Manifest validation failed';
+    body = error.message ?? 'Manifest contains invalid data.';
+  } else if (error.kind === 'io') {
+    title = 'Could not read manifest';
+    body = error.message ?? 'Filesystem error reading saddle.manifest.json.';
+  }
+  return (
+    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+      <div style={{ maxWidth: 520, textAlign: 'center', padding: 24 }}>
+        <h2 style={{ margin: 0, fontSize: 17, fontWeight: 600, color: 'var(--color-danger)' }}>{title}</h2>
+        <p style={{ marginTop: 12, fontSize: 13, color: 'var(--color-fg-muted)', lineHeight: 1.5 }}>{body}</p>
+        <div style={{ marginTop: 20, display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <button onClick={onOpenInEditor} style={{ height: 30, padding: '0 14px', background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6, fontSize: 13, cursor: 'pointer' }}>Open in editor</button>
+          {allowReset && (
+            <button onClick={() => { void onResetAndRePick(); }} style={{ height: 30, padding: '0 14px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 6, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>Reset and re-pick</button>
           )}
         </div>
       </div>
