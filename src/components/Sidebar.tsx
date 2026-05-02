@@ -1,15 +1,13 @@
 import { PanelLeftClose, PanelLeft, Folder, Settings, Network, Package, Palette, MoveHorizontal, Square, Type } from 'lucide-react';
-import type { ProjectStructure, Component } from '../types/component';
+import type { ProjectStructure } from '../types/component';
 
 export type AppView = 'components' | 'hierarchy' | 'settings' | 'tokens' | 'export';
 export type TokenGroup = 'all' | 'colors' | 'spacing' | 'radius' | 'typography';
 
 interface SidebarProps {
   project: ProjectStructure | null;
-  onSelectComponent: (component: Component) => void;
-  selectedComponent: Component | null;
   onLoadProject: () => void;
-  onConfigure: () => void;
+  onConfigureComponents: () => void;
   onExport: () => void;
   view: AppView;
   onViewChange: (view: AppView) => void;
@@ -21,10 +19,8 @@ interface SidebarProps {
 
 export function Sidebar({
   project,
-  onSelectComponent,
-  selectedComponent,
   onLoadProject,
-  onConfigure: _onConfigure,
+  onConfigureComponents,
   onExport,
   view,
   onViewChange,
@@ -37,8 +33,6 @@ export function Sidebar({
     onTokenGroupChange(group);
     onViewChange('tokens');
   };
-
-  const filteredComponents = project?.components ?? [];
 
   if (collapsed) {
     return (
@@ -105,25 +99,6 @@ export function Sidebar({
               <NavItem icon={<Type size={14} />} label="Typography" active={view === 'tokens' && tokenGroup === 'typography'} onClick={() => goToTokens('typography')} />
             </Section>
 
-            <Section label="Components">
-              {filteredComponents.length === 0 ? (
-                <div style={{ padding: '4px 8px', fontSize: 13, color: 'var(--color-fg-subtle)', fontStyle: 'italic' }}>
-                  No components found
-                </div>
-              ) : (
-                filteredComponents.map((component, idx) => (
-                  <NavItem
-                    key={idx}
-                    icon={<Folder size={14} />}
-                    label={component.name}
-                    count={component.variants.length}
-                    active={view === 'components' && selectedComponent?.name === component.name}
-                    onClick={() => { onSelectComponent(component); onViewChange('components'); }}
-                  />
-                ))
-              )}
-            </Section>
-
             {project.blocks && project.blocks.length > 0 && (
               <Section label="Blocks">
                 {project.blocks.map((block, idx) => (
@@ -171,42 +146,52 @@ export function Sidebar({
             </div>
           </div>
         )}
-        <button
-          onClick={() => (project ? onViewChange('settings') : onLoadProject())}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            width: '100%',
-            height: 32,
-            padding: '0 10px',
-            background: project ? 'transparent' : 'var(--color-primary)',
-            color: project ? 'var(--color-fg)' : '#ffffff',
-            border: project ? 'none' : 'none',
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: project ? 400 : 500,
-            cursor: 'pointer',
-            textAlign: 'left',
-            boxShadow: project ? 'none' : 'var(--elevation-1)',
-            transition: 'background 100ms ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = project ? 'rgba(0,0,0,0.04)' : 'var(--color-primary-press)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = project ? 'transparent' : 'var(--color-primary)';
-          }}
-        >
-          {project ? (
-            <>
+        {project ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <button
+              onClick={onConfigureComponents}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                width: '100%', height: 32, padding: '0 10px',
+                background: 'transparent', color: 'var(--color-fg)',
+                border: 'none', borderRadius: 6,
+                fontSize: 13, fontWeight: 400, cursor: 'pointer', textAlign: 'left',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <Folder size={14} style={{ flexShrink: 0, color: 'var(--color-fg-muted)' }} />
+              <span>Configure components…</span>
+            </button>
+            <button
+              onClick={() => onViewChange('settings')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                width: '100%', height: 32, padding: '0 10px',
+                background: 'transparent', color: 'var(--color-fg)',
+                border: 'none', borderRadius: 6,
+                fontSize: 13, fontWeight: 400, cursor: 'pointer', textAlign: 'left',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
               <Settings size={14} style={{ flexShrink: 0, color: 'var(--color-fg-muted)' }} />
               <span>Settings</span>
-            </>
-          ) : (
-            'Load Project'
-          )}
-        </button>
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onLoadProject}
+            style={{
+              height: 32, padding: '0 14px',
+              background: 'var(--color-primary)', color: '#fff',
+              border: 'none', borderRadius: 6,
+              fontSize: 13, fontWeight: 500, cursor: 'pointer',
+            }}
+          >
+            Load Project
+          </button>
+        )}
       </footer>
     </aside>
   );

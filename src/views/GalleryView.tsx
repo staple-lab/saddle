@@ -68,7 +68,7 @@ export function GalleryView() {
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [devServerUrl, setDevServerUrl] = useState<string>('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [tokenGroup, setTokenGroup] = useState<TokenGroup>('all');
   const [devServerStatus, setDevServerStatus] = useState<DevServerStatus>({ kind: 'idle' });
 
@@ -302,13 +302,8 @@ export function GalleryView() {
         {project && (
           <Sidebar
             project={project}
-            onSelectComponent={(comp) => {
-              setSelectedComponent(comp);
-              setView('components');
-            }}
-            selectedComponent={selectedComponent}
             onLoadProject={handleLoadProject}
-            onConfigure={() => setShowWizard(true)}
+            onConfigureComponents={() => setShowWizard(true)}
             onExport={() => { setView('export'); setSelectedComponent(null); }}
             view={view}
             onViewChange={(v) => { setView(v); if (v !== 'components') setSelectedComponent(null); }}
