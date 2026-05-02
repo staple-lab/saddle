@@ -145,6 +145,10 @@ export function GalleryView() {
       }
 
       setProject(loadedProject);
+      const firstComp = loadedProject.components[0];
+      if (firstComp) {
+        setSelectedComponent(firstComp);
+      }
       addLog('success', `Loaded ${loadedProject.components.length} components`, 'saddle');
 
       try {
@@ -276,7 +280,15 @@ export function GalleryView() {
       return <TokensView groupFilter={tokenGroup} />;
     }
     if (selectedComponent) {
-      return <EditorView component={selectedComponent} onBack={() => setSelectedComponent(null)} devServerUrl={devServerUrl || undefined} />;
+      return (
+        <EditorView
+          components={project.components}
+          component={selectedComponent}
+          onSelectComponent={(comp) => setSelectedComponent(comp)}
+          onBack={() => setSelectedComponent(null)}
+          devServerUrl={devServerUrl || undefined}
+        />
+      );
     }
     return (
       <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>

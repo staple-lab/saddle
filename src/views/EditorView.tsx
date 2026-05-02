@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Component } from '../types/component';
+import { ComponentDropdown } from '../components/ComponentDropdown';
 import { CodeEditor } from '../components/CodeEditor';
 import { StyleEditor } from '../components/StyleEditor';
 import { ComponentPreview, type ComponentPreviewHandle } from '../components/ComponentPreview';
@@ -8,7 +9,9 @@ import { ResizablePanel } from '../components/ResizablePanel';
 import { updateTokens, writeComponentFile, readComponentFile } from '../lib/tauri';
 
 interface EditorViewProps {
+  components: Component[];
   component: Component;
+  onSelectComponent: (component: Component) => void;
   onBack: () => void;
   devServerUrl?: string;
 }
@@ -62,8 +65,8 @@ function cloneVariantSource(originalSource: string, componentName: string, varia
   return `---\n${out.join('\n')}\n---\n${body}`;
 }
 
-export function EditorView({ component, devServerUrl }: EditorViewProps) {
-  const [selectedVariantIndex] = useState(0);
+export function EditorView({ components, component, onSelectComponent, devServerUrl }: EditorViewProps) {
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [tab, setTab] = useState<Tab>('style');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
@@ -80,6 +83,10 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
     console.log('INIT localTokens from frontmatter:', t);
     setLocalTokens(t);
   }, [selectedVariantIndex]);
+
+  useEffect(() => {
+    setSelectedVariantIndex(0);
+  }, [component.directory]);
 
   // camelCase → kebab-case so the visible value in the field matches what the bridge
   // applies to the live element.
@@ -187,6 +194,29 @@ export function EditorView({ component, devServerUrl }: EditorViewProps) {
         onClick={(e) => { if (e.target === e.currentTarget) clearSelection(); }}
         style={{ flex: 1, minWidth: 0, minHeight: 0, display: 'flex', flexDirection: 'column', background: 'var(--color-stage)', overflow: 'hidden' }}
       >
+        <div style={{
+          height: 38, padding: '0 14px',
+          display: 'flex', alignItems: 'center', gap: 10,
+          borderBottom: '1px solid var(--color-border)',
+          background: '#fff',
+          flexShrink: 0,
+        }}>
+          <ComponentDropdown
+            components={components}
+            selectedComponent={component}
+            selectedVariant={selectedVariant}
+            onSelect={(comp, variant) => {
+              const idx = comp.variants.findIndex((v) => v.filePath === variant.filePath);
+              if (comp.directory !== component.directory) {
+                onSelectComponent(comp);
+                // After parent re-renders with new component, the useEffect above resets index to 0.
+                // We don't need to call setSelectedVariantIndex here in the cross-component case.
+              } else if (idx >= 0) {
+                setSelectedVariantIndex(idx);
+              }
+            }}
+          />
+        </div>
 
         {/* Preview */}
         <div
