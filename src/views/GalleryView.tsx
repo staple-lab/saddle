@@ -123,7 +123,7 @@ export function GalleryView() {
       try {
         await readManifest(selectedPath as string);
         // Manifest exists — load directly without picker.
-        await handleWizardComplete();
+        await handleWizardComplete(selectedPath as string);
       } catch (err: any) {
         if (err && typeof err === 'object' && err.kind === 'not_found') {
           setShowWizard(true);
@@ -140,18 +140,19 @@ export function GalleryView() {
     }
   };
 
-  const handleWizardComplete = async () => {
+  const handleWizardComplete = async (rootOverride?: string) => {
+    const root = rootOverride ?? projectRoot;
     try {
       setLoading(true);
       setError(null);
       setShowWizard(false);
 
-      addLog('info', `Loading project from ${projectRoot}`, 'saddle');
+      addLog('info', `Loading project from ${root}`, 'saddle');
 
-      const loadedProject = await loadProject(projectRoot);
+      const loadedProject = await loadProject(root);
 
       try {
-        const config = await loadGlobalConfig(projectRoot);
+        const config = await loadGlobalConfig(root);
         loadTokensFromConfig(config.tokens);
         addLog('success', 'Global tokens loaded from saddle.config.json', 'tokens');
       } catch {
@@ -159,14 +160,15 @@ export function GalleryView() {
       }
 
       setProject(loadedProject);
+      addLog('success', `Loaded ${loadedProject.components.length} components`, 'saddle');
+
       const firstComp = loadedProject.components[0];
       if (firstComp) {
         setSelectedComponent(firstComp);
       }
-      addLog('success', `Loaded ${loadedProject.components.length} components`, 'saddle');
 
       try {
-        await watchProject(projectRoot);
+        await watchProject(root);
         addLog('info', 'File watcher started', 'watcher');
 
         listen<{ paths: string[]; kind: string }>('file-changed', (event) => {
@@ -178,7 +180,7 @@ export function GalleryView() {
         addLog('warning', `File watcher failed: ${err}`, 'watcher');
       }
 
-      await startSaddleManagedVite(projectRoot);
+      await startSaddleManagedVite(root);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load project');
       addLog('error', `Failed: ${err}`, 'saddle');
