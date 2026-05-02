@@ -359,6 +359,11 @@ export function buildManifestFromSelections(
   const byDir = new Map<string, string[]>();
   for (const rel of selectedRelative) {
     const dir = rel.includes('/') ? rel.slice(0, rel.lastIndexOf('/')) : '';
+    if (!dir) {
+      // Root-level files don't map to a component (no parent directory). Skip and warn.
+      console.warn(`Skipping root-level file in manifest: ${rel}`);
+      continue;
+    }
     if (!byDir.has(dir)) byDir.set(dir, []);
     byDir.get(dir)!.push(rel);
   }
