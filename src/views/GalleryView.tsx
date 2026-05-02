@@ -71,6 +71,7 @@ export function GalleryView() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [tokenGroup, setTokenGroup] = useState<TokenGroup>('all');
   const [devServerStatus, setDevServerStatus] = useState<DevServerStatus>({ kind: 'idle' });
+  const [drift, setDrift] = useState<{ added: string[]; removed: string[] }>({ added: [], removed: [] });
 
   const addLog = (type: LogEntry['type'], message: string, source?: string) => {
     setLogs(prev => [...prev, { timestamp: new Date(), type, message, source }]);
@@ -80,6 +81,13 @@ export function GalleryView() {
     const unlisten = listen('dev-server-exited', () => {
       setDevServerStatus({ kind: 'failed', error: 'Vite child process exited unexpectedly' });
       setLogs(prev => [...prev, { timestamp: new Date(), type: 'error', message: 'Vite child process exited', source: 'devserver' }]);
+    });
+    return () => { unlisten.then(fn => fn()); };
+  }, []);
+
+  useEffect(() => {
+    const unlisten = listen<{ added: string[]; removed: string[] }>('manifest-drift', (event) => {
+      setDrift(event.payload);
     });
     return () => { unlisten.then(fn => fn()); };
   }, []);
@@ -144,6 +152,7 @@ export function GalleryView() {
     const root = rootOverride ?? projectRoot;
     try {
       setLoading(true);
+      setDrift({ added: [], removed: [] });
       setError(null);
       setShowWizard(false);
 
@@ -303,6 +312,9 @@ export function GalleryView() {
           onSelectComponent={(comp) => setSelectedComponent(comp)}
           onBack={() => setSelectedComponent(null)}
           devServerUrl={devServerUrl || undefined}
+          driftAdded={drift.added.length}
+          driftRemoved={drift.removed.length}
+          onOpenPicker={() => setShowWizard(true)}
         />
       );
     }

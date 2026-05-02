@@ -8,6 +8,7 @@ import { AIGuidanceEditor } from '../components/AIGuidanceEditor';
 import { ResizablePanel } from '../components/ResizablePanel';
 import { updateTokens, writeComponentFile, readComponentFile } from '../lib/tauri';
 import { MarkdownEditor } from '../components/MarkdownEditor';
+import { DriftPill } from '../components/DriftPill';
 
 interface EditorViewProps {
   components: Component[];
@@ -15,6 +16,9 @@ interface EditorViewProps {
   onSelectComponent: (component: Component) => void;
   onBack: () => void;
   devServerUrl?: string;
+  driftAdded: number;
+  driftRemoved: number;
+  onOpenPicker: () => void;
 }
 
 type Tab = 'doc' | 'style' | 'code' | 'ai' | 'metadata';
@@ -67,7 +71,7 @@ function cloneVariantSource(originalSource: string, componentName: string, varia
   return `---\n${out.join('\n')}\n---\n${body}`;
 }
 
-export function EditorView({ components, component, onSelectComponent, devServerUrl }: EditorViewProps) {
+export function EditorView({ components, component, onSelectComponent, devServerUrl, driftAdded, driftRemoved, onOpenPicker }: EditorViewProps) {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [tab, setTab] = useState<Tab>('doc');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
@@ -219,6 +223,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
               }
             }}
           />
+          <DriftPill added={driftAdded} removed={driftRemoved} onClick={onOpenPicker} />
         </div>
 
         {/* Preview */}
