@@ -4,7 +4,7 @@ import styles from './ProjectSetupWizard.module.css';
 
 interface ProjectSetupWizardProps {
   projectRoot: string;
-  onComplete: (componentPath: string, extensions: string[]) => void;
+  onComplete: () => void;
   onCancel: () => void;
 }
 
@@ -56,9 +56,10 @@ export function ProjectSetupWizard({ projectRoot, onComplete, onCancel }: Projec
 
   const handleComplete = () => {
     const finalPath = selectedPath === 'custom' ? customPath : selectedPath;
-    if (finalPath && extensions.length > 0) {
-      onComplete(finalPath, extensions);
+    if ((selectedPath || customPath) && extensions.length > 0) {
+      onComplete();
     }
+    void finalPath; // retained for Phase 8 cleanup
   };
 
   if (scanning) {

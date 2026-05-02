@@ -145,148 +145,79 @@ export function exportDTCG(config: GlobalConfig): string {
   return JSON.stringify(dtcg, null, 2);
 }
 
-export async function loadProject(
-  rootPath: string,
-  componentPath: string = 'src/components',
-  extensions: string[] = ['.tsx', '.jsx']
-): Promise<ProjectStructure> {
-  // Normalize paths
+export async function loadProject(rootPath: string): Promise<ProjectStructure> {
   const normalizedRoot = rootPath.replace(/\\/g, '/');
-  const normalizedComponentPath = componentPath.replace(/\\/g, '/').replace(/^\/+/, '');
-  const fullComponentPath = `${normalizedRoot}/${normalizedComponentPath}`.replace(/\/+/g, '/');
 
-  const files = await scanProjectDirectory(rootPath);
-
-  console.log('=== Load Project Debug ===');
-  console.log('Total files scanned:', files.length);
-  console.log('Root path:', normalizedRoot);
-  console.log('Component path:', normalizedComponentPath);
-  console.log('Full component path:', fullComponentPath);
-  console.log('Extensions:', extensions);
-  console.log('All scanned files:', files.map(f => ({ path: f.path, name: f.name, isDir: f.is_dir })));
-
-  // Find component directories within the specified path
-  const componentDirs = files.filter(f => {
-    const normalizedFilePath = f.path.replace(/\\/g, '/');
-    const isDir = f.is_dir;
-
-    if (!isDir) return false;
-
-    // Must be inside the component path
-    if (!normalizedFilePath.startsWith(fullComponentPath)) return false;
-
-    // Must be a direct child directory (not the root itself)
-    const relativePath = normalizedFilePath.slice(fullComponentPath.length).replace(/^\/+/, '');
-    const isDirectChild = relativePath.length > 0 && !relativePath.includes('/');
-
-    console.log('Dir check:', f.name, 'relative:', relativePath, 'isDirectChild:', isDirectChild);
-
-    return isDirectChild;
-  });
-
-  console.log('Component directories found:', componentDirs.length);
-  componentDirs.forEach(d => console.log('  -', d.name, 'at', d.path));
+  const manifest = await readManifest(normalizedRoot);
 
   const components: Component[] = [];
 
-  for (const dir of componentDirs) {
-    const dirPath = dir.path.replace(/\\/g, '/');
-    const componentFiles = files.filter(f => {
-      if (f.is_dir) return false;
+  for (const mc of manifest.components) {
+    const componentDir = `${normalizedRoot}/${mc.directory}`.replace(/\/+/g, '/');
+    const variants: import('../types/component').ComponentVariant[] = [];
 
-      const filePath = f.path.replace(/\\/g, '/');
+    for (const mv of mc.variants) {
+      const fullFilePath = `${normalizedRoot}/${mv.file}`.replace(/\/+/g, '/');
+      const fullDocPath = `${normalizedRoot}/${mv.doc}`.replace(/\/+/g, '/');
 
-      // Must be directly in this component directory (not in subdirectories)
-      if (!filePath.startsWith(dirPath + '/')) return false;
+      let parsed: { frontmatter: any; code: string } = { frontmatter: null, code: '' };
+      let missing = false;
+      try {
+        const tsxContent = await readComponentFile(fullFilePath);
+        parsed = await parseComponentFile(tsxContent);
+      } catch (err) {
+        console.warn(`Variant file missing or unreadable: ${fullFilePath}`, err);
+        missing = true;
+      }
 
-      const relativePath = filePath.slice(dirPath.length + 1);
-      if (relativePath.includes('/')) return false; // Ignore nested files
-
-      return extensions.some(ext => f.name.endsWith(ext));
-    });
-
-    console.log(`Files in ${dir.name}:`, componentFiles.length, componentFiles.map(f => f.name));
-
-    const variantResults = await Promise.all(
-      componentFiles.map(async (file) => {
+      let docContent = '';
+      try {
+        docContent = await readComponentFile(fullDocPath);
+      } catch {
+        // Doc doesn't exist yet — seed it.
+        const description = parsed.frontmatter?.description as string | undefined;
+        const usage = parsed.frontmatter?.usage as string | undefined;
+        docContent = seedDocTemplate(mc.name, mv.name, description, usage);
         try {
-          const content = await readComponentFile(file.path);
-          const parsed = await parseComponentFile(content);
-
-          // Extract variant name from filename (e.g., "Button.Primary.tsx" -> "Primary")
-          const fileNameParts = file.name.replace(/\.(tsx|jsx|ts|js)$/, '').split('.');
-          const variantName = fileNameParts.length > 1 ? fileNameParts[fileNameParts.length - 1] : 'Default';
-
-          return {
-            filePath: file.path,
-            variantName,
-            frontmatter: parsed.frontmatter,
-            code: parsed.code,
-          };
-        } catch (err) {
-          console.warn(`Skipping ${file.path}:`, err);
-          return null;
+          await writeComponentFile(fullDocPath, docContent);
+        } catch (writeErr) {
+          console.error(`Failed to seed doc at ${fullDocPath}:`, writeErr);
         }
-      })
-    );
-    const variants = variantResults.filter((v): v is NonNullable<typeof v> => v !== null);
+      }
+
+      variants.push({
+        filePath: fullFilePath,
+        variantName: mv.name,
+        frontmatter: parsed.frontmatter,
+        code: parsed.code,
+        docPath: fullDocPath,
+        docContent,
+        missing,
+      });
+    }
 
     components.push({
-      name: dir.name,
-      directory: dir.path,
+      name: mc.name,
+      directory: componentDir,
       variants,
     });
   }
 
-  console.log('Total components loaded:', components.length);
-
-  // Scan for blocks (directories under src/blocks or blocks/)
-  const blocks: import('../types/component').Block[] = [];
-  const blockDirs = files.filter(f => {
-    const normalizedFilePath = f.path.replace(/\\/g, '/');
-    return f.is_dir && (normalizedFilePath.includes('/blocks/') && !normalizedFilePath.endsWith('/blocks'));
-  });
-
-  for (const dir of blockDirs) {
-    const propsFile = files.find(f => !f.is_dir && f.path.startsWith(dir.path) && f.name.endsWith('.props.json'));
-    let props: Record<string, string> = {};
-    if (propsFile) {
-      try {
-        const propsContent = await readComponentFile(propsFile.path);
-        props = JSON.parse(propsContent);
-      } catch {}
-    }
-
-    // Read block file to find composed components
-    const blockFile = files.find(f => !f.is_dir && f.path.startsWith(dir.path) && (f.name.endsWith('.tsx') || f.name.endsWith('.jsx')));
-    let composedComponents: string[] = [];
-    if (blockFile) {
-      try {
-        const content = await readComponentFile(blockFile.path);
-        const importMatches = content.match(/import.*from.*['"]\.\.\/(components|\.\.\/components)\/(\w+)/g);
-        if (importMatches) {
-          composedComponents = importMatches.map(m => {
-            const match = m.match(/\/(\w+)['"]/);
-            return match ? match[1] : '';
-          }).filter(Boolean);
-        }
-      } catch {}
-    }
-
-    blocks.push({
-      name: dir.name,
-      directory: dir.path,
-      components: composedComponents,
-      propsFile: propsFile?.path || '',
-      props,
-    });
-  }
-
   return {
-    rootPath,
+    rootPath: normalizedRoot,
     components,
-    blocks,
+    blocks: [], // Blocks are out of scope for v1 manifest; legacy callers won't depend on this list.
   };
+}
+
+function seedDocTemplate(componentName: string, variantName: string, description?: string, usage?: string): string {
+  const heading = `# ${componentName} · ${variantName}`;
+  if (!description && !usage) {
+    return `${heading}\n`;
+  }
+  const descBlock = description ? `\n${description.trim()}\n` : '';
+  const usageText = usage?.trim() || 'Document when and how to use this variant.';
+  return `${heading}\n${descBlock}\n## Usage\n\n${usageText}\n`;
 }
 
 import type { Manifest } from '../types/manifest';

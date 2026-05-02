@@ -21,6 +21,9 @@ export interface ComponentVariant {
   variantName: string; // e.g., "Primary", "Secondary"
   frontmatter: ComponentFrontmatter | null;
   code: string;
+  docPath: string;    // absolute path to the variant's sibling .md file
+  docContent: string; // contents of the .md file (auto-created if missing)
+  missing?: boolean;  // true if the .tsx file couldn't be read (set by loadProject)
 }
 
 export interface Component {

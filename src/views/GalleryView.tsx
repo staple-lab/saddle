@@ -126,7 +126,7 @@ export function GalleryView() {
     }
   };
 
-  const handleWizardComplete = async (componentPath: string, extensions: string[]) => {
+  const handleWizardComplete = async () => {
     try {
       setLoading(true);
       setError(null);
@@ -134,7 +134,7 @@ export function GalleryView() {
 
       addLog('info', `Loading project from ${projectRoot}`, 'saddle');
 
-      const loadedProject = await loadProject(projectRoot, componentPath, extensions);
+      const loadedProject = await loadProject(projectRoot);
 
       try {
         const config = await loadGlobalConfig(projectRoot);
@@ -147,7 +147,6 @@ export function GalleryView() {
       setProject(loadedProject);
       addLog('success', `Loaded ${loadedProject.components.length} components`, 'saddle');
 
-      // Start file watching
       try {
         await watchProject(projectRoot);
         addLog('info', 'File watcher started', 'watcher');
@@ -161,7 +160,6 @@ export function GalleryView() {
         addLog('warning', `File watcher failed: ${err}`, 'watcher');
       }
 
-      // Auto-start Saddle-managed Vite for this project.
       await startSaddleManagedVite(projectRoot);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load project');
