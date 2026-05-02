@@ -45,12 +45,59 @@ pub enum ManifestError {
     Io(String),
 }
 
+fn validate_path(label: &str, path: &str) -> Result<(), ManifestError> {
+    if path.is_empty() {
+        return Err(ManifestError::ValidationError(format!("{} is empty", label)));
+    }
+    if path.starts_with('/') || (path.len() >= 2 && &path[1..2] == ":") {
+        return Err(ManifestError::ValidationError(format!(
+            "{} '{}' must be relative (no absolute paths)",
+            label, path
+        )));
+    }
+    if path.split('/').any(|seg| seg == "..") {
+        return Err(ManifestError::ValidationError(format!(
+            "{} '{}' contains path traversal ('..')",
+            label, path
+        )));
+    }
+    Ok(())
+}
+
+fn validate_manifest(manifest: &Manifest) -> Result<(), ManifestError> {
+    for c in &manifest.components {
+        if c.id.is_empty() || c.name.is_empty() {
+            return Err(ManifestError::ValidationError(
+                "component id/name cannot be empty".to_string(),
+            ));
+        }
+        validate_path("component.directory", &c.directory)?;
+        if c.variants.is_empty() {
+            return Err(ManifestError::ValidationError(format!(
+                "component '{}' has no variants",
+                c.name
+            )));
+        }
+        for v in &c.variants {
+            if v.id.is_empty() || v.name.is_empty() {
+                return Err(ManifestError::ValidationError(
+                    "variant id/name cannot be empty".to_string(),
+                ));
+            }
+            validate_path("variant.file", &v.file)?;
+            validate_path("variant.doc", &v.doc)?;
+        }
+    }
+    Ok(())
+}
+
 pub fn parse_manifest(content: &str) -> Result<Manifest, ManifestError> {
     let manifest: Manifest = serde_json::from_str(content)
         .map_err(|e| ManifestError::InvalidJson(e.to_string()))?;
     if manifest.version != 1 {
         return Err(ManifestError::UnsupportedVersion(manifest.version));
     }
+    validate_manifest(&manifest)?;
     Ok(manifest)
 }
 
@@ -94,6 +141,40 @@ mod tests {
         match parse_manifest(json) {
             Err(ManifestError::UnsupportedVersion(2)) => {}
             other => panic!("expected UnsupportedVersion(2), got {:?}", other),
+        }
+    }
+
+    fn make_manifest_with_paths(component_dir: &str, file: &str, doc: &str) -> String {
+        format!(
+            r#"{{"$schema":"saddle/manifest/v1","version":1,"components":[{{"id":"x","name":"X","directory":"{}","variants":[{{"id":"x-d","name":"D","file":"{}","doc":"{}"}}]}}]}}"#,
+            component_dir, file, doc
+        )
+    }
+
+    #[test]
+    fn parse_rejects_absolute_directory() {
+        let json = make_manifest_with_paths("/abs/path", "X.tsx", "X.md");
+        match parse_manifest(&json) {
+            Err(ManifestError::ValidationError(msg)) => assert!(msg.contains("absolute"), "msg: {}", msg),
+            other => panic!("expected ValidationError, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn parse_rejects_traversal_in_file() {
+        let json = make_manifest_with_paths("src/x", "../sneak.tsx", "X.md");
+        match parse_manifest(&json) {
+            Err(ManifestError::ValidationError(msg)) => assert!(msg.contains("traversal") || msg.contains("..")),
+            other => panic!("expected ValidationError, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn parse_rejects_empty_field() {
+        let json = make_manifest_with_paths("src/x", "", "X.md");
+        match parse_manifest(&json) {
+            Err(ManifestError::ValidationError(msg)) => assert!(msg.contains("empty") || msg.contains("file")),
+            other => panic!("expected ValidationError, got {:?}", other),
         }
     }
 }
