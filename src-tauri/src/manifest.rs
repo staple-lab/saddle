@@ -49,7 +49,7 @@ fn validate_path(label: &str, path: &str) -> Result<(), ManifestError> {
     if path.is_empty() {
         return Err(ManifestError::ValidationError(format!("{} is empty", label)));
     }
-    if path.starts_with('/') || (path.len() >= 2 && &path[1..2] == ":") {
+    if path.starts_with('/') || path.chars().nth(1) == Some(':') {
         return Err(ManifestError::ValidationError(format!(
             "{} '{}' must be relative (no absolute paths)",
             label, path
@@ -310,6 +310,17 @@ mod tests {
         assert!(body.starts_with("# Tooltip · Default"));
         let trimmed = body.trim();
         assert_eq!(trimmed, "# Tooltip · Default");
+    }
+
+    #[test]
+    fn validate_path_does_not_panic_on_multibyte_first_char() {
+        // Path starting with a multi-byte UTF-8 character followed by ':'.
+        // This used to panic via byte-slicing through the middle of 'é'.
+        let json = make_manifest_with_paths("é:foo", "X.tsx", "X.md");
+        // We don't care which specific error fires (validation rejects this),
+        // only that we get a clean Err and not a panic.
+        let result = parse_manifest(&json);
+        assert!(result.is_err(), "expected an error, got Ok");
     }
 
     #[test]
