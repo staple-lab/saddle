@@ -49,7 +49,14 @@
   var ROOT_SELECTOR = window.SADDLE_ROOT_SELECTOR || '#root';
 
   function getRoot() {
-    return document.querySelector(ROOT_SELECTOR) || document.body;
+    var start = document.querySelector(ROOT_SELECTOR) || document.body;
+    // Descend through single-child wrappers (e.g. <TooltipProvider>, embed div)
+    // so the tree starts at the actually rendered variant element.
+    var cur = start;
+    while (cur && cur.children && cur.children.length === 1) {
+      cur = cur.children[0];
+    }
+    return cur || start;
   }
 
   function pathToElement(path) {
