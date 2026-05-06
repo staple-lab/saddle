@@ -119,6 +119,11 @@ h2 {
   font-family: var(--font-serif);
   font-size: 72px; font-weight: 700; letter-spacing: -0.03em;
   line-height: 1.02; margin-bottom: 18px; color: var(--ink);
+  text-wrap: balance;
+}
+.hero h1 .line {
+  display: block;
+  white-space: nowrap;
 }
 .hero-sub {
   font-size: 17px; color: var(--fg-secondary); line-height: 1.6;
@@ -937,9 +942,12 @@ h2 {
 
 /* Responsive */
 @media (max-width: 900px) {
-  .hero h1 { font-size: 36px; }
+  .hero h1 { font-size: 44px; }
   .feature-grid { grid-template-columns: 1fr; }
   .steps { grid-template-columns: repeat(2, 1fr); }
   .hero-flow-explain { flex-direction: column; }
   .hfe-arrow { transform: rotate(90deg); }
+}
+@media (max-width: 480px) {
+  .hero h1 { font-size: 34px; }
 }
