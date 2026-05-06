@@ -22,7 +22,7 @@
   --green: #16a34a;
   --green-light: #f0fdf4;
 
-  --font-serif: 'PP Neue Montreal', 'PP Editorial New', 'Instrument Serif', system-ui, sans-serif;
+  --font-serif: 'PP Mori', 'PP Neue Montreal', 'Instrument Serif', system-ui, sans-serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 }
@@ -41,7 +41,7 @@ body {
 
 h1, h2, h3, .serif {
   font-family: var(--font-serif);
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: -0.02em;
   line-height: 1.05;
 }
@@ -78,7 +78,7 @@ code, pre, .mono, .nav-github {
 /* Shared */
 .section-inner { max-width: 1140px; margin: 0 auto; padding: 0 32px; }
 h2 {
-  font-size: 48px; font-weight: 400; letter-spacing: -0.02em;
+  font-size: 48px; font-weight: 700; letter-spacing: -0.02em;
   text-align: center; color: var(--ink); margin-bottom: 12px;
   font-family: var(--font-serif);
 }
@@ -117,7 +117,7 @@ h2 {
 }
 .hero h1 {
   font-family: var(--font-serif);
-  font-size: 72px; font-weight: 400; letter-spacing: -0.025em;
+  font-size: 72px; font-weight: 700; letter-spacing: -0.03em;
   line-height: 1.02; margin-bottom: 18px; color: var(--ink);
 }
 .hero-sub {
@@ -272,7 +272,7 @@ h2 {
   text-align: left;
   font-family: var(--font-serif);
   font-size: 48px;
-  font-weight: 400;
+  font-weight: 700;
   letter-spacing: -0.02em;
   text-wrap: balance;
   color: var(--ink);
@@ -312,7 +312,7 @@ h2 {
 .feat-card-text h3 {
   font-family: var(--font-serif);
   font-size: 22px;
-  font-weight: 400;
+  font-weight: 700;
   color: var(--ink);
   letter-spacing: -0.015em;
   margin: 0;
@@ -917,7 +917,7 @@ h2 {
   font-size: 12px; font-weight: 600; margin-bottom: 14px;
   font-family: var(--font-mono);
 }
-.step h3 { font-family: var(--font-serif); font-size: 20px; font-weight: 400; margin-bottom: 8px; letter-spacing: -0.015em; }
+.step h3 { font-family: var(--font-serif); font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.015em; }
 .step p { font-size: 14px; color: var(--fg-secondary); line-height: 1.6; }
 
 /* === TECH / DOWNLOAD / FOOTER === */
