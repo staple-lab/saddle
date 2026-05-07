@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { TokenPicker } from '../tokens/TokenPicker';
+import { TokenDropdown } from '../tokens/TokenDropdown';
 import { detectTokenSlot } from '../lib/cssProperties';
 
 interface StyleEditorProps {
@@ -298,35 +298,26 @@ function Field({
             }}
           />
         )}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="—"
-          style={{
-            flex: 1,
-            minWidth: 0,
-            height: 24,
-            padding: '0 6px',
-            fontSize: 11,
-            fontFamily: value.startsWith('var(') ? 'var(--font-code)' : 'inherit',
-            border: '1px solid var(--color-border)',
-            borderRadius: 4,
-            background: '#ffffff',
-            color: 'var(--color-fg)',
-            outline: 'none',
-            boxSizing: 'border-box',
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-accent)';
-            e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.18)';
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-border)';
-            e.currentTarget.style.boxShadow = 'none';
-          }}
-        />
-        {slot && <TokenPicker slot={slot} value={value} onPick={(v) => onChange(v)} />}
+        {slot ? (
+          <TokenDropdown slot={slot} value={value} onPick={(v) => onChange(v)} />
+        ) : (
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder="—"
+            style={{
+              flex: 1, minWidth: 0,
+              height: 24, padding: '0 6px',
+              fontSize: 11,
+              fontFamily: value.startsWith('var(') ? 'var(--font-code)' : 'inherit',
+              border: '1px solid var(--color-border)',
+              borderRadius: 4,
+              background: '#ffffff', color: 'var(--color-fg)',
+              outline: 'none', boxSizing: 'border-box',
+            }}
+          />
+        )}
       </div>
     </div>
   );

@@ -296,6 +296,39 @@ export function updateToken(slot: TokenSlot, name: string, value: string) {
   commit(buildStore(_store.semanticGroups, next));
 }
 
+// Slot-prefix mapping for new scalar tokens' --css-var names.
+const SCALAR_PREFIX: Record<Exclude<TokenSlot, 'color'>, string> = {
+  space: '--spacing',
+  radius: '--rounded',
+  fontFamily: '--font-family',
+  fontSize: '--font-size',
+  fontWeight: '--font-weight',
+  lineHeight: '--line-height',
+  letterSpacing: '--letter-spacing',
+};
+
+/** Add a new scalar token to the given slot. Color additions go through
+ *  `addColorToken(groupId, ...)` instead. Returns the resulting cssVar so
+ *  callers can immediately use it. Names collide → suffix incremented. */
+export function addToken(slot: Exclude<TokenSlot, 'color'>, name: string, value: string): string {
+  const cleanName = slug(name) || 'custom';
+  const existing = _store[slot];
+  let finalName = cleanName;
+  let n = 2;
+  while (existing.some((t) => t.name === finalName)) {
+    finalName = `${cleanName}-${n++}`;
+  }
+  const cssVar = `${SCALAR_PREFIX[slot]}-${finalName}`;
+  const newToken: Token = { name: finalName, cssVar, value, slot };
+  const scalars = pickScalars(_store);
+  const next = {
+    ...scalars,
+    [slot]: [...scalars[slot as keyof typeof scalars], newToken],
+  };
+  commit(buildStore(_store.semanticGroups, next));
+  return cssVar;
+}
+
 export const tokens = new Proxy({} as Record<TokenSlot, Token[]>, {
   get(_t, key: string) { return (_store as unknown as Record<string, Token[]>)[key]; },
   ownKeys() { return ['color', 'space', 'radius', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing']; },
