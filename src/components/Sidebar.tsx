@@ -1,11 +1,13 @@
-import { PanelLeftClose, PanelLeft, Folder, Settings, Network, Package, Palette, MoveHorizontal, Square, Type } from 'lucide-react';
-import type { ProjectStructure } from '../types/component';
+import { PanelLeftClose, PanelLeft, Folder, Settings, Network, Package, Palette, MoveHorizontal, Square, Type, Box } from 'lucide-react';
+import type { ProjectStructure, Component } from '../types/component';
 
 export type AppView = 'components' | 'hierarchy' | 'settings' | 'tokens' | 'export';
 export type TokenGroup = 'all' | 'colors' | 'spacing' | 'radius' | 'typography';
 
 interface SidebarProps {
   project: ProjectStructure | null;
+  selectedComponent: Component | null;
+  onSelectComponent: (component: Component) => void;
   onLoadProject: () => void;
   onConfigureComponents: () => void;
   onExport: () => void;
@@ -19,6 +21,8 @@ interface SidebarProps {
 
 export function Sidebar({
   project,
+  selectedComponent,
+  onSelectComponent,
   onLoadProject,
   onConfigureComponents,
   onExport,
@@ -92,6 +96,25 @@ export function Sidebar({
           </div>
         ) : (
           <>
+            <Section label="Components">
+              {project.components.length === 0 ? (
+                <div style={{ padding: '4px 8px', fontSize: 13, color: 'var(--color-fg-subtle)', fontStyle: 'italic' }}>
+                  No components in manifest
+                </div>
+              ) : (
+                project.components.map((c, idx) => (
+                  <NavItem
+                    key={`${c.directory}-${idx}`}
+                    icon={<Box size={14} />}
+                    label={c.name}
+                    count={c.variants.length}
+                    active={view === 'components' && selectedComponent?.directory === c.directory}
+                    onClick={() => { onSelectComponent(c); onViewChange('components'); }}
+                  />
+                ))
+              )}
+            </Section>
+
             <Section label="Tokens">
               <NavItem icon={<Palette size={14} />} label="Colors" active={view === 'tokens' && tokenGroup === 'colors'} onClick={() => goToTokens('colors')} />
               <NavItem icon={<MoveHorizontal size={14} />} label="Spacing" active={view === 'tokens' && tokenGroup === 'spacing'} onClick={() => goToTokens('spacing')} />

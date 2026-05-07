@@ -68,7 +68,7 @@ export function GalleryView() {
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [devServerUrl, setDevServerUrl] = useState<string>('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [tokenGroup, setTokenGroup] = useState<TokenGroup>('all');
   const [devServerStatus, setDevServerStatus] = useState<DevServerStatus>({ kind: 'idle' });
   const [drift, setDrift] = useState<{ added: string[]; removed: string[] }>({ added: [], removed: [] });
@@ -383,6 +383,8 @@ export function GalleryView() {
         {project && (
           <Sidebar
             project={project}
+            selectedComponent={selectedComponent}
+            onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }}
             onLoadProject={handleLoadProject}
             onConfigureComponents={() => setShowWizard(true)}
             onExport={() => { setView('export'); setSelectedComponent(null); }}
