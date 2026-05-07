@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
+import { PanelLeftClose, PanelLeft } from 'lucide-react';
 import type { Component } from '../types/component';
 import { ComponentDropdown } from '../components/ComponentDropdown';
 import { CodeEditor } from '../components/CodeEditor';
@@ -79,6 +80,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
   const [tree, setTree] = useState<IframeNode | null>(null);
+  const [elementsCollapsed, setElementsCollapsed] = useState(false);
   const [propValues, setPropValues] = useState<Record<string, any>>({});
   const [customPropRows, setCustomPropRows] = useState<Array<{ key: string; value: string }>>([]);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
@@ -219,25 +221,66 @@ export function EditorView({ components, component, onSelectComponent, devServer
     <div style={{ display: 'flex', height: '100%', flex: 1, overflow: 'hidden' }}>
 
       {/* Left Panel - Live DOM tree (Chrome DevTools-style markup) */}
-      <ResizablePanel defaultWidth={420} minWidth={260} maxWidth={640} side="left">
+      {elementsCollapsed ? (
         <div style={{
-          height: 38, padding: '0 14px',
-          display: 'flex', alignItems: 'center',
-          borderBottom: '1px solid var(--color-border)',
-          background: '#fff', flexShrink: 0,
-          fontSize: 11, color: 'var(--color-fg-muted)',
-          fontFamily: 'var(--font-code)',
+          width: 32, flexShrink: 0,
+          background: '#f5f5f7',
+          borderRight: '1px solid var(--color-border)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          paddingTop: 6,
         }}>
-          Elements
+          <button
+            type="button"
+            title="Show elements"
+            onClick={() => setElementsCollapsed(false)}
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              padding: 6, borderRadius: 6,
+              color: 'var(--color-fg-muted)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+          >
+            <PanelLeft size={16} />
+          </button>
         </div>
-        <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#fff' }}>
-          <ElementTree
-            tree={tree}
-            selectedPath={selectedElementPath}
-            onSelect={(path) => setSelectedElementPath(path)}
-          />
-        </div>
-      </ResizablePanel>
+      ) : (
+        <ResizablePanel defaultWidth={420} minWidth={260} maxWidth={640} side="left">
+          <div style={{
+            height: 38, padding: '0 8px 0 14px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            borderBottom: '1px solid var(--color-border)',
+            background: '#fff', flexShrink: 0,
+            fontSize: 11, color: 'var(--color-fg-muted)',
+            fontFamily: 'var(--font-code)',
+          }}>
+            <span>Elements</span>
+            <button
+              type="button"
+              title="Hide elements"
+              onClick={() => setElementsCollapsed(true)}
+              style={{
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: 4, borderRadius: 4,
+                color: 'var(--color-fg-muted)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto', background: '#fff' }}>
+            <ElementTree
+              tree={tree}
+              selectedPath={selectedElementPath}
+              onSelect={(path) => setSelectedElementPath(path)}
+            />
+          </div>
+        </ResizablePanel>
+      )}
 
       {/* Center Stage - Preview */}
       <main
