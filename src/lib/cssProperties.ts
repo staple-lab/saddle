@@ -73,6 +73,10 @@ export const CSS_PROPERTIES: Record<string, CSSPropertyDef> = {
   'letter-spacing': { name: 'letter-spacing', types: ['length'], tokenSlot: 'letterSpacing' },
   'letterSpacing': { name: 'letterSpacing', types: ['length'], tokenSlot: 'letterSpacing' },
 
+  // Shadow
+  'box-shadow': { name: 'box-shadow', types: ['custom'], tokenSlot: 'shadow' },
+  'boxShadow': { name: 'boxShadow', types: ['custom'], tokenSlot: 'shadow' },
+
   // Border Width
   'border-width': { name: 'border-width', types: ['length'], allowsMultiple: true },
   'borderWidth': { name: 'borderWidth', types: ['length'], allowsMultiple: true },
@@ -138,6 +142,9 @@ export function detectTokenSlot(propertyName: string, value?: string): TokenSlot
     }
     if (value.startsWith('var(--rounded') || value.startsWith('var(--radius')) {
       return 'radius';
+    }
+    if (value.startsWith('var(--shadow')) {
+      return 'shadow';
     }
     if (value.startsWith('var(--font-size')) {
       return 'fontSize';

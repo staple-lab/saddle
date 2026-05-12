@@ -136,6 +136,23 @@
     return out;
   }
 
+  // Recolor the browser's default focus ring (system blue on macOS/Webkit) to
+  // Saddle brand orange so it doesn't compete with the inspector overlay.
+  function injectFocusRingStyles() {
+    if (document.getElementById('__saddle_focus_styles__')) return;
+    var style = document.createElement('style');
+    style.id = '__saddle_focus_styles__';
+    style.textContent =
+      ':focus-visible{outline-color:#e07c3e !important;}' +
+      ':focus{outline-color:#e07c3e;}';
+    (document.head || document.documentElement).appendChild(style);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', injectFocusRingStyles, { once: true });
+  } else {
+    injectFocusRingStyles();
+  }
+
   // Highlight overlay
   var overlay = null;
   function ensureOverlay() {
@@ -144,8 +161,9 @@
     overlay.id = '__saddle_overlay__';
     overlay.style.cssText =
       'position:fixed;z-index:2147483646;pointer-events:none;' +
-      'outline:1.5px solid #007AFF;outline-offset:2px;' +
-      'background:transparent;border-radius:2px;' +
+      'outline:2.5px solid #e07c3e;outline-offset:2px;' +
+      'box-shadow:0 0 0 2px rgba(224,124,62,0.18), 0 0 12px rgba(224,124,62,0.35);' +
+      'background:rgba(224,124,62,0.08);border-radius:3px;' +
       'transition:all 80ms ease;display:none;box-sizing:border-box;';
     document.body.appendChild(overlay);
     return overlay;
@@ -303,6 +321,19 @@
     return e.metaKey || e.ctrlKey;
   }
 
+  // Block focus from landing on the clicked element during inspect-mode click.
+  // Browsers focus on mousedown, so by the time `click` fires it's too late and
+  // the browser's default focus ring (often blue) ends up next to our orange
+  // selection overlay.
+  document.addEventListener(
+    'mousedown',
+    function (e) {
+      if (!inspectModifier(e)) return;
+      e.preventDefault();
+    },
+    true
+  );
+
   document.addEventListener(
     'click',
     function (e) {
@@ -313,6 +344,10 @@
         if (path) {
           e.preventDefault();
           e.stopPropagation();
+          // Belt-and-suspenders: if focus did slip through, drop it.
+          if (document.activeElement && document.activeElement.blur) {
+            try { document.activeElement.blur(); } catch (_) {}
+          }
           sendElement(path);
         }
         return;

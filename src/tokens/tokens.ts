@@ -5,6 +5,7 @@ export type TokenSlot =
   | 'color'
   | 'space'
   | 'radius'
+  | 'shadow'
   | 'fontFamily'
   | 'fontSize'
   | 'fontWeight'
@@ -113,6 +114,14 @@ const defaultScalarTokens = {
     { name: 'lg', cssVar: '--rounded-lg', value: '12px', slot: 'radius' as TokenSlot },
     { name: 'full', cssVar: '--rounded-full', value: '9999px', slot: 'radius' as TokenSlot },
   ],
+  shadow: [
+    { name: 'sm', cssVar: '--shadow-sm', value: '0 1px 2px 0 rgb(0 0 0 / 0.05)', slot: 'shadow' as TokenSlot },
+    { name: 'md', cssVar: '--shadow-md', value: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)', slot: 'shadow' as TokenSlot },
+    { name: 'lg', cssVar: '--shadow-lg', value: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)', slot: 'shadow' as TokenSlot },
+    { name: 'xl', cssVar: '--shadow-xl', value: '0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)', slot: 'shadow' as TokenSlot },
+    { name: '2xl', cssVar: '--shadow-2xl', value: '0 25px 50px -12px rgb(0 0 0 / 0.25)', slot: 'shadow' as TokenSlot },
+    { name: 'inner', cssVar: '--shadow-inner', value: 'inset 0 2px 4px 0 rgb(0 0 0 / 0.05)', slot: 'shadow' as TokenSlot },
+  ],
   fontFamily: [
     { name: 'sans', cssVar: '--font-family-sans', value: '-apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif', slot: 'fontFamily' as TokenSlot },
     { name: 'mono', cssVar: '--font-family-mono', value: '"SF Mono", Menlo, Consolas, monospace', slot: 'fontFamily' as TokenSlot },
@@ -148,6 +157,7 @@ export type TokenStore = {
   color: Token[]; // derived from groups
   space: Token[];
   radius: Token[];
+  shadow: Token[];
   fontFamily: Token[];
   fontSize: Token[];
   fontWeight: Token[];
@@ -190,7 +200,7 @@ function applyToDocument(store: TokenStore) {
       root.style.setProperty(`--${g.id}-${t.name}`, t.value);
     }
   }
-  for (const slot of ['space', 'radius', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'] as TokenSlot[]) {
+  for (const slot of ['space', 'radius', 'shadow', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'] as TokenSlot[]) {
     for (const t of store[slot]) {
       root.style.setProperty(t.cssVar, t.value);
     }
@@ -213,7 +223,7 @@ export function useTokens(): TokenStore {
 
 function pickScalars(s: TokenStore) {
   return {
-    space: s.space, radius: s.radius,
+    space: s.space, radius: s.radius, shadow: s.shadow,
     fontFamily: s.fontFamily, fontSize: s.fontSize, fontWeight: s.fontWeight,
     lineHeight: s.lineHeight, letterSpacing: s.letterSpacing,
   };
@@ -300,6 +310,7 @@ export function updateToken(slot: TokenSlot, name: string, value: string) {
 const SCALAR_PREFIX: Record<Exclude<TokenSlot, 'color'>, string> = {
   space: '--spacing',
   radius: '--rounded',
+  shadow: '--shadow',
   fontFamily: '--font-family',
   fontSize: '--font-size',
   fontWeight: '--font-weight',
@@ -331,7 +342,7 @@ export function addToken(slot: Exclude<TokenSlot, 'color'>, name: string, value:
 
 export const tokens = new Proxy({} as Record<TokenSlot, Token[]>, {
   get(_t, key: string) { return (_store as unknown as Record<string, Token[]>)[key]; },
-  ownKeys() { return ['color', 'space', 'radius', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing']; },
+  ownKeys() { return ['color', 'space', 'radius', 'shadow', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing']; },
 });
 
 export function loadTokensFromConfig(_config: unknown) {

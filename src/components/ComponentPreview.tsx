@@ -520,7 +520,7 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
         tokens[`--${g.id}-${t.name}`] = t.value;
       }
     }
-    for (const slot of ['space', 'radius', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'] as const) {
+    for (const slot of ['space', 'radius', 'shadow', 'fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'] as const) {
       for (const t of tokenStore[slot]) {
         tokens[t.cssVar] = t.value;
       }
@@ -620,12 +620,12 @@ export const ComponentPreview = forwardRef<ComponentPreviewHandle, ComponentPrev
   :root {
     --spacing-xs: 4px; --spacing-sm: 8px; --spacing-md: 16px;
     --spacing-lg: 20px; --spacing-xl: 24px; --spacing-xxl: 32px;
-    --colors-primary: #007AFF; --colors-secondary: #f5f5f7;
-    --colors-brand: #1d1d1f; --colors-accent: #007AFF;
-    --colors-background: #ffffff; --colors-surface: #f5f5f7;
-    --colors-text: #1d1d1f; --colors-subtext: #86868b;
-    --colors-border: #d1d1d6; --colors-error: #FF3B30;
-    --colors-success: #34C759; --colors-warning: #FF9500;
+    --colors-primary: #e07c3e; --colors-secondary: #f5f5f4;
+    --colors-brand: #1c1917; --colors-accent: #e07c3e;
+    --colors-background: #ffffff; --colors-surface: #f5f5f4;
+    --colors-text: #1c1917; --colors-subtext: #78716c;
+    --colors-border: #e7e5e4; --colors-error: #dc2626;
+    --colors-success: #16a34a; --colors-warning: #d97706;
     --rounded-none: 0px; --rounded-sm: 4px; --rounded-md: 8px;
     --rounded-lg: 12px; --rounded-full: 9999px;
     --font-size-xs: 11px; --font-size-sm: 13px;

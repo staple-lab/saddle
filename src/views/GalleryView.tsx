@@ -68,7 +68,7 @@ export function GalleryView() {
   const [terminalOpen, setTerminalOpen] = useState(false);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [devServerUrl, setDevServerUrl] = useState<string>('');
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [elementsCollapsed, setElementsCollapsed] = useState(false);
   const [tokenGroup, setTokenGroup] = useState<TokenGroup>('all');
   const [devServerStatus, setDevServerStatus] = useState<DevServerStatus>({ kind: 'idle' });
   const [drift, setDrift] = useState<{ added: string[]; removed: string[] }>({ added: [], removed: [] });
@@ -337,13 +337,29 @@ export function GalleryView() {
           onRetryDevServer={() => startSaddleManagedVite(projectRoot)}
           onDevServerConnect={(url) => {
             setDevServerUrl(url);
+            setDevServerStatus({ kind: 'live', url });
             addLog('success', `Connected to dev server: ${url}`, 'devserver');
           }}
+          onConfigureComponents={() => setShowWizard(true)}
+          onOpenHierarchy={() => { setView('hierarchy'); setSelectedComponent(null); }}
+          onOpenExport={() => { setView('export'); setSelectedComponent(null); }}
         />
       );
     }
     if (view === 'tokens') {
       return <TokensView groupFilter={tokenGroup} />;
+    }
+    if (view === 'blocks') {
+      return (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
+          <div style={{ textAlign: 'center' }}>
+            <h2 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: 'var(--color-fg)' }}>Blocks</h2>
+            <p style={{ margin: 0, fontSize: 13, color: 'var(--color-fg-muted)' }}>
+              {project.blocks && project.blocks.length > 0 ? 'Select a block from the sidebar' : 'No blocks defined yet'}
+            </p>
+          </div>
+        </div>
+      );
     }
     if (selectedComponent) {
       return (
@@ -356,17 +372,12 @@ export function GalleryView() {
           driftAdded={drift.added.length}
           driftRemoved={drift.removed.length}
           onOpenPicker={() => setShowWizard(true)}
+          elementsCollapsed={elementsCollapsed}
+          onElementsCollapsedChange={setElementsCollapsed}
         />
       );
     }
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-stage)' }}>
-        <div style={{ textAlign: 'center' }}>
-          <h2 style={{ margin: '0 0 8px', fontSize: 17, fontWeight: 600, color: 'var(--color-fg)' }}>Select a Component</h2>
-          <p style={{ margin: 0, fontSize: 13, color: 'var(--color-fg-muted)' }}>Choose from the sidebar to view and edit</p>
-        </div>
-      </div>
-    );
+    return null;
   };
 
   return (
@@ -378,22 +389,29 @@ export function GalleryView() {
           onCancel={handleWizardCancel}
         />
       )}
-      <TopBar />
+      <TopBar
+        view={view}
+        showBlocks={!!project && !!project.blocks && project.blocks.length > 0}
+        onSelectSection={(section) => {
+          if (section === 'components') {
+            if (!selectedComponent && project && project.components.length > 0) {
+              setSelectedComponent(project.components[0]);
+            }
+          } else {
+            setSelectedComponent(null);
+          }
+          setView(section);
+        }}
+        onOpenSettings={() => { setView('settings'); setSelectedComponent(null); }}
+      />
       <div style={{ flex: 1, display: 'flex', minHeight: 0 }}>
-        {project && (
+        {project && (view === 'tokens' || view === 'blocks') && (
           <Sidebar
             project={project}
-            selectedComponent={selectedComponent}
-            onSelectComponent={(c) => { setSelectedComponent(c); setView('components'); }}
-            onLoadProject={handleLoadProject}
-            onConfigureComponents={() => setShowWizard(true)}
-            onExport={() => { setView('export'); setSelectedComponent(null); }}
             view={view}
             onViewChange={(v) => { setView(v); if (v !== 'components') setSelectedComponent(null); }}
             tokenGroup={tokenGroup}
             onTokenGroupChange={setTokenGroup}
-            collapsed={sidebarCollapsed}
-            onToggleCollapsed={() => setSidebarCollapsed((c) => !c)}
           />
         )}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>

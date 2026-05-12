@@ -78,7 +78,7 @@ export function TokenDropdown({ slot, value, onPick }: Props) {
           fontSize: 11,
           cursor: 'pointer',
           textAlign: 'left',
-          boxShadow: open ? '0 0 0 2px rgba(0, 122, 255, 0.18)' : 'none',
+          boxShadow: open ? '0 0 0 2px rgba(224, 124, 62, 0.22)' : 'none',
           minWidth: 0,
         }}
       >
@@ -140,7 +140,7 @@ export function TokenDropdown({ slot, value, onPick }: Props) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,
                   width: '100%', padding: '5px 8px',
-                  background: isActive ? 'rgba(0, 122, 255, 0.08)' : 'transparent',
+                  background: isActive ? 'rgba(224, 124, 62, 0.10)' : 'transparent',
                   border: 'none', borderRadius: 4,
                   cursor: 'pointer', textAlign: 'left',
                   fontSize: 12,

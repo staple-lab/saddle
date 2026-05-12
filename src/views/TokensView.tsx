@@ -21,6 +21,7 @@ const SLOT_LABELS: Record<TokenSlot, string> = {
   color: 'Colors',
   space: 'Spacing',
   radius: 'Radius',
+  shadow: 'Shadows',
   fontFamily: 'Font family',
   fontSize: 'Font size',
   fontWeight: 'Font weight',
@@ -33,6 +34,7 @@ const GROUPS: Group[] = [
   { id: 'colors', title: 'Colors', slots: ['color'] },
   { id: 'spacing', title: 'Spacing', slots: ['space'] },
   { id: 'radius', title: 'Radius', slots: ['radius'] },
+  { id: 'shadows', title: 'Shadows', slots: ['shadow'] },
   { id: 'typography', title: 'Typography', slots: ['fontFamily', 'fontSize', 'fontWeight', 'lineHeight', 'letterSpacing'] },
 ];
 
@@ -170,7 +172,7 @@ function TokenRow({ groupId, token }: { groupId: string; token: ColorToken }) {
         style={{ ...inputStyle, height: 26, fontSize: 11, fontFamily: 'var(--font-code)' }}
         onFocus={(e) => {
           e.currentTarget.style.borderColor = 'var(--color-accent)';
-          e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.18)';
+          e.currentTarget.style.boxShadow = '0 0 0 2px rgba(224, 124, 62, 0.22)';
         }}
         onBlur={(e) => {
           e.currentTarget.style.borderColor = 'var(--color-border)';
@@ -414,6 +416,8 @@ function InlineLabel({
 // --------------------------------------------------------------------------------------
 
 function ScalarList({ items, slot }: { items: Token[]; slot: TokenSlot }) {
+  const isShadow = slot === 'shadow';
+  const gridCols = isShadow ? '56px 100px 1fr 1.4fr' : '120px 1fr 220px';
   return (
     <div style={{ display: 'flex', flexDirection: 'column' }}>
       {items.map((t, idx) => (
@@ -421,13 +425,14 @@ function ScalarList({ items, slot }: { items: Token[]; slot: TokenSlot }) {
           key={t.cssVar}
           style={{
             display: 'grid',
-            gridTemplateColumns: '120px 1fr 220px',
+            gridTemplateColumns: gridCols,
             alignItems: 'center',
             gap: 12,
             padding: '10px 0',
             borderTop: idx === 0 ? 'none' : '1px solid var(--color-border)',
           }}
         >
+          {isShadow && <ShadowSwatch value={t.value} />}
           <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-fg)' }}>{t.name}</div>
           <code style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)' }}>{t.cssVar}</code>
           <input
@@ -438,7 +443,7 @@ function ScalarList({ items, slot }: { items: Token[]; slot: TokenSlot }) {
             style={inputStyle}
             onFocus={(e) => {
               e.currentTarget.style.borderColor = 'var(--color-accent)';
-              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(0, 122, 255, 0.18)';
+              e.currentTarget.style.boxShadow = '0 0 0 2px rgba(224, 124, 62, 0.22)';
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = 'var(--color-border)';
@@ -448,6 +453,23 @@ function ScalarList({ items, slot }: { items: Token[]; slot: TokenSlot }) {
         </div>
       ))}
     </div>
+  );
+}
+
+function ShadowSwatch({ value }: { value: string }) {
+  return (
+    <div
+      style={{
+        width: 40,
+        height: 40,
+        borderRadius: 8,
+        background: '#ffffff',
+        boxShadow: value,
+        border: '1px solid var(--color-border)',
+        flexShrink: 0,
+      }}
+      title={value}
+    />
   );
 }
 

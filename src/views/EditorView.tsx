@@ -22,6 +22,8 @@ interface EditorViewProps {
   driftAdded: number;
   driftRemoved: number;
   onOpenPicker: () => void;
+  elementsCollapsed?: boolean;
+  onElementsCollapsedChange?: (collapsed: boolean) => void;
 }
 
 type Tab = 'style' | 'code' | 'props' | 'ai' | 'metadata';
@@ -30,7 +32,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'style', label: 'Style' },
   { id: 'code', label: 'Code' },
   { id: 'props', label: 'Props' },
-  { id: 'ai', label: 'AI' },
+  { id: 'ai', label: 'Docs' },
   { id: 'metadata', label: 'Metadata' },
 ];
 
@@ -74,13 +76,19 @@ function cloneVariantSource(originalSource: string, componentName: string, varia
   return `---\n${out.join('\n')}\n---\n${body}`;
 }
 
-export function EditorView({ components, component, onSelectComponent, devServerUrl, driftAdded, driftRemoved, onOpenPicker }: EditorViewProps) {
+export function EditorView({ components, component, onSelectComponent, devServerUrl, driftAdded, driftRemoved, onOpenPicker, elementsCollapsed: elementsCollapsedProp, onElementsCollapsedChange }: EditorViewProps) {
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
   const [tab, setTab] = useState<Tab>('style');
   const [localTokens, setLocalTokens] = useState<Record<string, string>>({});
   const [selectedElementPath, setSelectedElementPath] = useState<number[] | null>(null);
   const [tree, setTree] = useState<IframeNode | null>(null);
-  const [elementsCollapsed, setElementsCollapsed] = useState(false);
+  const [elementsCollapsedLocal, setElementsCollapsedLocal] = useState(false);
+  // Controlled when the parent supplies elementsCollapsed; otherwise self-managed.
+  const elementsCollapsed = elementsCollapsedProp ?? elementsCollapsedLocal;
+  const setElementsCollapsed = (next: boolean) => {
+    if (elementsCollapsedProp === undefined) setElementsCollapsedLocal(next);
+    onElementsCollapsedChange?.(next);
+  };
   const [propValues, setPropValues] = useState<Record<string, any>>({});
   const [customPropRows, setCustomPropRows] = useState<Array<{ key: string; value: string }>>([]);
   const [selectedElementStyles, setSelectedElementStyles] = useState<Record<string, string> | null>(null);
@@ -89,7 +97,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
   const [newVariantName, setNewVariantName] = useState('');
   const [newVariantBusy, setNewVariantBusy] = useState(false);
   const [newVariantError, setNewVariantError] = useState<string | null>(null);
-  const selectedVariant = component.variants[selectedVariantIndex];
+  const selectedVariant = component.variants[selectedVariantIndex] ?? component.variants[0];
   const propSchema = useMemo(() => inferPropSchema(selectedVariant.code), [selectedVariant.code]);
 
   useEffect(() => {
@@ -99,8 +107,10 @@ export function EditorView({ components, component, onSelectComponent, devServer
   }, [selectedVariantIndex]);
 
   useEffect(() => {
-    setSelectedVariantIndex(0);
-  }, [component.directory]);
+    if (selectedVariantIndex >= component.variants.length) {
+      setSelectedVariantIndex(0);
+    }
+  }, [component.directory, component.variants.length, selectedVariantIndex]);
 
   // Reset prop overrides when the variant changes — each variant starts clean.
   useEffect(() => {
@@ -248,14 +258,25 @@ export function EditorView({ components, component, onSelectComponent, devServer
       ) : (
         <ResizablePanel defaultWidth={420} minWidth={260} maxWidth={640} side="left">
           <div style={{
-            height: 38, padding: '0 8px 0 14px',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            height: 38, padding: '0 8px 0 10px',
+            display: 'flex', alignItems: 'center', gap: 8,
             borderBottom: '1px solid var(--color-border)',
             background: '#fff', flexShrink: 0,
-            fontSize: 11, color: 'var(--color-fg-muted)',
-            fontFamily: 'var(--font-code)',
           }}>
-            <span>Elements</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <ComponentDropdown
+                components={components}
+                selectedComponent={component}
+                selectedVariant={selectedVariant}
+                onSelect={(comp, variant) => {
+                  const idx = Math.max(0, comp.variants.findIndex((v) => v.filePath === variant.filePath));
+                  setSelectedVariantIndex(idx);
+                  if (comp.directory !== component.directory) {
+                    onSelectComponent(comp);
+                  }
+                }}
+              />
+            </div>
             <button
               type="button"
               title="Hide elements"
@@ -265,6 +286,7 @@ export function EditorView({ components, component, onSelectComponent, devServer
                 padding: 4, borderRadius: 4,
                 color: 'var(--color-fg-muted)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0,
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
@@ -289,26 +311,11 @@ export function EditorView({ components, component, onSelectComponent, devServer
       >
         <div style={{
           height: 38, padding: '0 14px',
-          display: 'flex', alignItems: 'center', gap: 10,
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 10,
           borderBottom: '1px solid var(--color-border)',
           background: '#fff',
           flexShrink: 0,
         }}>
-          <ComponentDropdown
-            components={components}
-            selectedComponent={component}
-            selectedVariant={selectedVariant}
-            onSelect={(comp, variant) => {
-              const idx = comp.variants.findIndex((v) => v.filePath === variant.filePath);
-              if (comp.directory !== component.directory) {
-                onSelectComponent(comp);
-                // After parent re-renders with new component, the useEffect above resets index to 0.
-                // We don't need to call setSelectedVariantIndex here in the cross-component case.
-              } else if (idx >= 0) {
-                setSelectedVariantIndex(idx);
-              }
-            }}
-          />
           <DriftPill added={driftAdded} removed={driftRemoved} onClick={onOpenPicker} />
         </div>
 
@@ -364,30 +371,6 @@ export function EditorView({ components, component, onSelectComponent, devServer
 
       {/* Right Panel - Inspector (resizable). Always visible. */}
       <ResizablePanel defaultWidth={480} minWidth={320} maxWidth={720} side="right">
-        {/* Component / variant header */}
-        <div
-          style={{
-            background: '#ffffff',
-            padding: '12px 16px',
-            borderBottom: '1px solid var(--color-border)',
-            flexShrink: 0,
-            display: 'flex',
-            alignItems: 'baseline',
-            gap: 8,
-            minWidth: 0,
-          }}
-        >
-          <span
-            title={component.name}
-            style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
-          >
-            {component.name}
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--color-fg-muted)', fontFamily: 'var(--font-code)', flexShrink: 0 }}>
-            · {selectedVariant.variantName}
-          </span>
-        </div>
-
         {/* Tabs */}
         <header style={{
           background: '#ffffff',
@@ -426,20 +409,16 @@ export function EditorView({ components, component, onSelectComponent, devServer
         {/* Tab Content */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {tab === 'style' && (
-            selectedElementPath ? (
-              <StyleEditor
-                tokens={selectedElementStyles ?? localTokens}
-                code={selectedVariant.code}
-                onTokenChange={handleTokenChange}
-                onStateChange={(state) => {
-                  if (selectedElementPath) {
-                    previewRef.current?.setElementState(selectedElementPath, state);
-                  }
-                }}
-              />
-            ) : (
-              <EmptyTab message="Select an element in the preview to inspect its styles." />
-            )
+            <StyleEditor
+              tokens={selectedElementStyles ?? localTokens}
+              code={selectedVariant.code}
+              onTokenChange={handleTokenChange}
+              onStateChange={(state) => {
+                if (selectedElementPath) {
+                  previewRef.current?.setElementState(selectedElementPath, state);
+                }
+              }}
+            />
           )}
 
           {tab === 'code' && (
@@ -471,13 +450,14 @@ export function EditorView({ components, component, onSelectComponent, devServer
           {tab === 'ai' && (
             selectedElementPath ? (
               <AIGuidanceEditor
+                componentName={component.name}
                 frontmatter={selectedVariant.frontmatter || {}}
                 onUpdate={(field, value) => {
                   console.log(`AI guidance: ${field} = ${value}`);
                 }}
               />
             ) : (
-              <EmptyTab message="Select an element in the preview to edit AI guidance." />
+              <EmptyTab message={`Select an element in the preview to edit ${component.name}.md`} />
             )
           )}
 

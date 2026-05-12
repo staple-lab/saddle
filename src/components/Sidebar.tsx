@@ -1,69 +1,32 @@
-import { PanelLeftClose, PanelLeft, Folder, Settings, Network, Package, Palette, MoveHorizontal, Square, Type, Box } from 'lucide-react';
-import type { ProjectStructure, Component } from '../types/component';
+import { Folder, Palette, MoveHorizontal, Square, Type, BoxSelect } from 'lucide-react';
+import type { ProjectStructure } from '../types/component';
 
-export type AppView = 'components' | 'hierarchy' | 'settings' | 'tokens' | 'export';
-export type TokenGroup = 'all' | 'colors' | 'spacing' | 'radius' | 'typography';
+export type AppView = 'components' | 'hierarchy' | 'settings' | 'tokens' | 'export' | 'blocks';
+export type TokenGroup = 'all' | 'colors' | 'spacing' | 'radius' | 'shadows' | 'typography';
 
 interface SidebarProps {
-  project: ProjectStructure | null;
-  selectedComponent: Component | null;
-  onSelectComponent: (component: Component) => void;
-  onLoadProject: () => void;
-  onConfigureComponents: () => void;
-  onExport: () => void;
+  project: ProjectStructure;
   view: AppView;
   onViewChange: (view: AppView) => void;
   tokenGroup: TokenGroup;
   onTokenGroupChange: (group: TokenGroup) => void;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
 }
 
 export function Sidebar({
   project,
-  selectedComponent,
-  onSelectComponent,
-  onLoadProject,
-  onConfigureComponents,
-  onExport,
   view,
   onViewChange,
   tokenGroup,
   onTokenGroupChange,
-  collapsed,
-  onToggleCollapsed,
 }: SidebarProps) {
   const goToTokens = (group: TokenGroup) => {
     onTokenGroupChange(group);
     onViewChange('tokens');
   };
 
-  if (collapsed) {
-    return (
-      <aside
-        data-tauri-drag-region
-        style={{
-          width: 40,
-          flexShrink: 0,
-          height: '100%',
-          background: '#f5f5f7',
-          borderRight: '1px solid var(--color-border)',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          paddingTop: 8,
-        }}
-      >
-        <ToggleButton title="Show sidebar" onClick={onToggleCollapsed}>
-          <PanelLeft size={16} />
-        </ToggleButton>
-      </aside>
-    );
-  }
-
   return (
     <aside style={{
-      width: 260,
+      width: 220,
       flexShrink: 0,
       height: '100%',
       background: '#f5f5f7',
@@ -72,175 +35,33 @@ export function Sidebar({
       flexDirection: 'column',
       overflow: 'hidden',
     }}>
-      <header
-        data-tauri-drag-region
-        style={{
-          height: 36,
-          padding: '0 8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'flex-end',
-          flexShrink: 0,
-        }}
-      >
-        <ToggleButton title="Hide sidebar" onClick={onToggleCollapsed}>
-          <PanelLeftClose size={16} />
-        </ToggleButton>
-      </header>
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '4px 12px 12px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {!project ? (
-          <div style={{ padding: '24px 4px', textAlign: 'center' }}>
-            <div style={{ fontSize: 13, color: 'var(--color-fg-muted)', lineHeight: 1.5 }}>
-              No project loaded
-            </div>
-          </div>
-        ) : (
-          <>
-            <Section label="Components">
-              {project.components.length === 0 ? (
-                <div style={{ padding: '4px 8px', fontSize: 13, color: 'var(--color-fg-subtle)', fontStyle: 'italic' }}>
-                  No components in manifest
-                </div>
-              ) : (
-                project.components.map((c, idx) => (
-                  <NavItem
-                    key={`${c.directory}-${idx}`}
-                    icon={<Box size={14} />}
-                    label={c.name}
-                    count={c.variants.length}
-                    active={view === 'components' && selectedComponent?.directory === c.directory}
-                    onClick={() => { onSelectComponent(c); onViewChange('components'); }}
-                  />
-                ))
-              )}
-            </Section>
+      <nav style={{ flex: 1, overflowY: 'auto', padding: '14px 12px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {view === 'tokens' && (
+          <Section label="Tokens">
+            <NavItem icon={<Palette size={14} />} label="Colors" active={tokenGroup === 'colors'} onClick={() => goToTokens('colors')} />
+            <NavItem icon={<MoveHorizontal size={14} />} label="Spacing" active={tokenGroup === 'spacing'} onClick={() => goToTokens('spacing')} />
+            <NavItem icon={<Square size={14} />} label="Radius" active={tokenGroup === 'radius'} onClick={() => goToTokens('radius')} />
+            <NavItem icon={<BoxSelect size={14} />} label="Shadows" active={tokenGroup === 'shadows'} onClick={() => goToTokens('shadows')} />
+            <NavItem icon={<Type size={14} />} label="Typography" active={tokenGroup === 'typography'} onClick={() => goToTokens('typography')} />
+          </Section>
+        )}
 
-            <Section label="Tokens">
-              <NavItem icon={<Palette size={14} />} label="Colors" active={view === 'tokens' && tokenGroup === 'colors'} onClick={() => goToTokens('colors')} />
-              <NavItem icon={<MoveHorizontal size={14} />} label="Spacing" active={view === 'tokens' && tokenGroup === 'spacing'} onClick={() => goToTokens('spacing')} />
-              <NavItem icon={<Square size={14} />} label="Radius" active={view === 'tokens' && tokenGroup === 'radius'} onClick={() => goToTokens('radius')} />
-              <NavItem icon={<Type size={14} />} label="Typography" active={view === 'tokens' && tokenGroup === 'typography'} onClick={() => goToTokens('typography')} />
-            </Section>
-
-            {project.blocks && project.blocks.length > 0 && (
-              <Section label="Blocks">
-                {project.blocks.map((block, idx) => (
-                  <NavItem
-                    key={`block-${idx}`}
-                    icon={<Folder size={14} />}
-                    label={block.name}
-                    count={block.components.length}
-                    active={false}
-                    onClick={() => {}}
-                  />
-                ))}
-              </Section>
-            )}
-
-            <Section label="Views">
-              <NavItem icon={<Network size={14} />} label="Hierarchy" active={view === 'hierarchy'} onClick={() => onViewChange('hierarchy')} />
-            </Section>
-
-            <Section label="Ship">
-              <NavItem icon={<Package size={14} />} label="Export" active={view === 'export'} onClick={onExport} />
-            </Section>
-          </>
+        {view === 'blocks' && project.blocks && project.blocks.length > 0 && (
+          <Section label="Blocks">
+            {project.blocks.map((block, idx) => (
+              <NavItem
+                key={`block-${idx}`}
+                icon={<Folder size={14} />}
+                label={block.name}
+                count={block.components.length}
+                active={false}
+                onClick={() => {}}
+              />
+            ))}
+          </Section>
         )}
       </nav>
-
-      <footer style={{ padding: '12px', borderTop: '1px solid var(--color-border)', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {project && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, padding: '0 4px' }}>
-            <div
-              title={project.rootPath}
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                color: 'var(--color-fg)',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-              }}
-            >
-              {project.rootPath.split('/').pop()}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>
-              {project.components.length} component{project.components.length === 1 ? '' : 's'}
-            </div>
-          </div>
-        )}
-        {project ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <button
-              onClick={onConfigureComponents}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                width: '100%', height: 32, padding: '0 10px',
-                background: 'transparent', color: 'var(--color-fg)',
-                border: 'none', borderRadius: 6,
-                fontSize: 13, fontWeight: 400, cursor: 'pointer', textAlign: 'left',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              <Folder size={14} style={{ flexShrink: 0, color: 'var(--color-fg-muted)' }} />
-              <span>Configure components…</span>
-            </button>
-            <button
-              onClick={() => onViewChange('settings')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 8,
-                width: '100%', height: 32, padding: '0 10px',
-                background: 'transparent', color: 'var(--color-fg)',
-                border: 'none', borderRadius: 6,
-                fontSize: 13, fontWeight: 400, cursor: 'pointer', textAlign: 'left',
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-            >
-              <Settings size={14} style={{ flexShrink: 0, color: 'var(--color-fg-muted)' }} />
-              <span>Settings</span>
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={onLoadProject}
-            style={{
-              height: 32, padding: '0 14px',
-              background: 'var(--color-primary)', color: '#fff',
-              border: 'none', borderRadius: 6,
-              fontSize: 13, fontWeight: 500, cursor: 'pointer',
-            }}
-          >
-            Load Project
-          </button>
-        )}
-      </footer>
     </aside>
-  );
-}
-
-function ToggleButton({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
-  return (
-    <button
-      title={title}
-      onClick={onClick}
-      style={{
-        background: 'transparent',
-        border: 'none',
-        cursor: 'pointer',
-        padding: 6,
-        borderRadius: 6,
-        color: 'var(--color-fg-muted)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-    >
-      {children}
-    </button>
   );
 }
 

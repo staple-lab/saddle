@@ -77,7 +77,7 @@ function Node({
           gap: 4,
           padding: '2px 8px 2px',
           paddingLeft: 8 + depth * 12,
-          background: isSelected ? 'rgba(0, 122, 255, 0.12)' : 'transparent',
+          background: isSelected ? 'rgba(224, 124, 62, 0.14)' : 'transparent',
           color: isSelected ? 'var(--color-accent)' : 'var(--color-fg)',
           cursor: 'pointer',
           borderRadius: 3,
@@ -162,7 +162,7 @@ function Node({
             fontSize: 11,
             lineHeight: 1.55,
             color: '#16a34a',
-            background: 'rgba(0, 122, 255, 0.04)',
+            background: 'rgba(224, 124, 62, 0.05)',
             wordBreak: 'break-word',
             whiteSpace: 'normal',
           }}

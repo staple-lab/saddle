@@ -16,9 +16,12 @@ interface DashboardViewProps {
   onLoadProject?: () => void;
   devServerStatus: DevServerStatus;
   onRetryDevServer?: () => void;
+  onConfigureComponents?: () => void;
+  onOpenHierarchy?: () => void;
+  onOpenExport?: () => void;
 }
 
-export function DashboardView({ project, projectRoot, onDevServerConnect, onLoadProject, devServerStatus, onRetryDevServer }: DashboardViewProps) {
+export function DashboardView({ project, projectRoot, onDevServerConnect, onLoadProject, devServerStatus, onRetryDevServer, onConfigureComponents, onOpenHierarchy, onOpenExport }: DashboardViewProps) {
   const [devServerUrl, setDevServerUrl] = useState('');
   const [manualCheckStatus, setManualCheckStatus] = useState<'idle' | 'checking' | 'connected' | 'failed'>('idle');
   const [mcpStatus] = useState<'disconnected' | 'connected'>('disconnected');
@@ -69,29 +72,46 @@ export function DashboardView({ project, projectRoot, onDevServerConnect, onLoad
             <Row label="Root" value={projectRoot} mono />
             <Row label="Components" value={`${project.components.length}`} />
             <Row label="Total Variants" value={`${project.components.reduce((acc, c) => acc + c.variants.length, 0)}`} />
-            {onLoadProject && (
-              <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+            <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+              {onConfigureComponents && (
+                <button
+                  onClick={onConfigureComponents}
+                  style={secondaryBtn}
+                >
+                  Configure components…
+                </button>
+              )}
+              {onLoadProject && (
                 <button
                   onClick={onLoadProject}
-                  style={{
-                    height: 30,
-                    padding: '0 14px',
-                    background: 'var(--color-primary)',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: 6,
-                    fontSize: 13,
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                    boxShadow: 'var(--elevation-1)',
-                  }}
+                  style={primaryBtn}
                   onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-primary-press)'; }}
                   onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-primary)'; }}
                 >
                   Load Different Project
                 </button>
-              </div>
-            )}
+              )}
+            </div>
+          </Card>
+
+          {/* Views & Ship */}
+          <Card title="Tools">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {onOpenHierarchy && (
+                <ToolRow
+                  title="Hierarchy"
+                  description="Visualize the component dependency graph"
+                  onClick={onOpenHierarchy}
+                />
+              )}
+              {onOpenExport && (
+                <ToolRow
+                  title="Export"
+                  description="Generate code or design tokens output"
+                  onClick={onOpenExport}
+                />
+              )}
+            </div>
           </Card>
 
           {/* Dev Server */}
@@ -389,6 +409,61 @@ function Card({ title, children }: { title: string; children: React.ReactNode })
       </div>
       {children}
     </div>
+  );
+}
+
+const primaryBtn: React.CSSProperties = {
+  height: 30,
+  padding: '0 14px',
+  background: 'var(--color-primary)',
+  color: '#ffffff',
+  border: 'none',
+  borderRadius: 6,
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  boxShadow: 'var(--elevation-1)',
+};
+
+const secondaryBtn: React.CSSProperties = {
+  height: 30,
+  padding: '0 12px',
+  background: '#ffffff',
+  color: 'var(--color-fg)',
+  border: '1px solid var(--color-border)',
+  borderRadius: 6,
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+};
+
+function ToolRow({ title, description, onClick }: { title: string; description: string; onClick: () => void }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: 12,
+        width: '100%',
+        padding: '10px 12px',
+        background: '#ffffff',
+        border: '1px solid var(--color-border)',
+        borderRadius: 8,
+        cursor: 'pointer',
+        textAlign: 'left',
+        transition: 'background 100ms',
+      }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-stage)'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = '#ffffff'; }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)' }}>{title}</span>
+        <span style={{ fontSize: 12, color: 'var(--color-fg-muted)' }}>{description}</span>
+      </div>
+      <span style={{ fontSize: 16, color: 'var(--color-fg-muted)' }}>→</span>
+    </button>
   );
 }
 

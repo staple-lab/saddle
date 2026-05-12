@@ -16,7 +16,9 @@ export function ComponentDropdown({
 }: ComponentDropdownProps) {
   const [open, setOpen] = useState(false);
   const [filter, setFilter] = useState('');
+  const [popoverRect, setPopoverRect] = useState<{ top: number; left: number } | null>(null);
   const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const popoverRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -24,8 +26,19 @@ export function ComponentDropdown({
   }, [open]);
 
   useEffect(() => {
+    if (!open) { setPopoverRect(null); return; }
+    if (buttonRef.current) {
+      const r = buttonRef.current.getBoundingClientRect();
+      setPopoverRect({ top: r.bottom + 4, left: r.left });
+    }
+  }, [open]);
+
+  useEffect(() => {
     const onClick = (e: MouseEvent) => {
-      if (!buttonRef.current?.contains(e.target as Node)) setOpen(false);
+      const t = e.target as Node;
+      if (buttonRef.current?.contains(t)) return;
+      if (popoverRef.current?.contains(t)) return;
+      setOpen(false);
     };
     if (open) window.addEventListener('mousedown', onClick);
     return () => window.removeEventListener('mousedown', onClick);
@@ -56,20 +69,25 @@ export function ComponentDropdown({
         onClick={() => setOpen((o) => !o)}
         style={{
           height: 28, padding: '0 10px',
-          background: '#fff', border: '1px solid var(--color-border)', borderRadius: 6,
+          background: '#fff',
+          border: `1px solid ${open ? 'var(--color-accent)' : 'var(--color-border)'}`,
+          boxShadow: open ? '0 0 0 2px rgba(224, 124, 62, 0.22)' : 'none',
+          borderRadius: 6,
           display: 'inline-flex', alignItems: 'center', gap: 8,
           fontSize: 13, fontWeight: 500, color: 'var(--color-fg)',
           cursor: 'pointer',
+          transition: 'border-color 100ms, box-shadow 100ms',
         }}
       >
         <span>{label}</span>
         <span style={{ color: 'var(--color-fg-muted)', fontSize: 9 }}>▾</span>
       </button>
 
-      {open && (
+      {open && popoverRect && (
         <div
+          ref={popoverRef}
           style={{
-            position: 'absolute', top: 32, left: 0,
+            position: 'fixed', top: popoverRect.top, left: popoverRect.left,
             minWidth: 280, maxHeight: 360, overflow: 'auto',
             background: '#fff', border: '1px solid var(--color-border)', borderRadius: 8,
             boxShadow: '0 12px 32px rgba(0,0,0,0.12)',
@@ -100,23 +118,13 @@ export function ComponentDropdown({
               {c.variants.map((v) => {
                 const isActive = selectedVariant?.filePath === v.filePath;
                 return (
-                  <button
+                  <VariantItem
                     key={v.filePath}
-                    type="button"
+                    label={`${v.variantName}${v.missing ? ' ⚠' : ''}`}
+                    isActive={isActive}
+                    isMissing={!!v.missing}
                     onClick={() => { onSelect(c, v); setOpen(false); setFilter(''); }}
-                    style={{
-                      display: 'block', width: '100%', textAlign: 'left',
-                      padding: '6px 10px', borderRadius: 4, border: 'none',
-                      background: isActive ? 'rgba(0,113,227,0.08)' : 'transparent',
-                      color: v.missing ? 'var(--color-danger)' : 'var(--color-fg)',
-                      textDecoration: v.missing ? 'line-through' : 'none',
-                      fontSize: 13, cursor: 'pointer',
-                    }}
-                    onMouseEnter={(e) => { if (!isActive) e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
-                    onMouseLeave={(e) => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}
-                  >
-                    {v.variantName}{v.missing ? ' ⚠' : ''}
-                  </button>
+                  />
                 );
               })}
             </div>
@@ -124,5 +132,48 @@ export function ComponentDropdown({
         </div>
       )}
     </div>
+  );
+}
+
+function VariantItem({
+  label,
+  isActive,
+  isMissing,
+  onClick,
+}: {
+  label: string;
+  isActive: boolean;
+  isMissing: boolean;
+  onClick: () => void;
+}) {
+  const [hover, setHover] = useState(false);
+  const background = isActive
+    ? 'rgba(224, 124, 62, 0.12)'
+    : hover
+      ? 'rgba(0,0,0,0.04)'
+      : 'transparent';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'block', width: '100%', textAlign: 'left',
+        padding: '6px 10px', borderRadius: 4, border: 'none',
+        background,
+        color: isMissing
+          ? 'var(--color-danger)'
+          : isActive
+            ? 'var(--color-accent)'
+            : 'var(--color-fg)',
+        textDecoration: isMissing ? 'line-through' : 'none',
+        fontSize: 13, fontWeight: isActive ? 600 : 400,
+        cursor: 'pointer',
+        transition: 'background 80ms ease, color 80ms ease',
+      }}
+    >
+      {label}
+    </button>
   );
 }

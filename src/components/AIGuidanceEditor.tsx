@@ -1,11 +1,12 @@
 import { useState } from 'react';
 
 interface AIGuidanceEditorProps {
+  componentName: string;
   frontmatter: any;
   onUpdate: (field: string, value: string) => void;
 }
 
-export function AIGuidanceEditor({ frontmatter, onUpdate }: AIGuidanceEditorProps) {
+export function AIGuidanceEditor({ componentName, frontmatter, onUpdate }: AIGuidanceEditorProps) {
   const [, setFocused] = useState<string | null>(null);
 
   const fields = [
@@ -16,8 +17,13 @@ export function AIGuidanceEditor({ frontmatter, onUpdate }: AIGuidanceEditorProp
 
   return (
     <div style={{ padding: '14px 16px' }}>
-      <div style={{ fontSize: 10, color: 'var(--color-fg-subtle)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: 12, fontWeight: 600 }}>
-        AI Guidance
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 12 }}>
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-fg)', fontFamily: 'var(--font-code)' }}>
+          {componentName}.md
+        </span>
+        <span style={{ fontSize: 11, color: 'var(--color-fg-muted)' }}>
+          Per-component docs surfaced to AI tools
+        </span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

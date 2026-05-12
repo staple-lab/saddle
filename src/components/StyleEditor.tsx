@@ -246,7 +246,7 @@ function StatePill({
         padding: '0 9px',
         background: active ? '#ffffff' : 'transparent',
         border: active ? '1px solid var(--color-accent)' : '1px solid transparent',
-        boxShadow: active ? '0 0 0 2px rgba(0, 122, 255, 0.18)' : 'none',
+        boxShadow: active ? '0 0 0 2px rgba(224, 124, 62, 0.22)' : 'none',
         borderRadius: 5,
         fontSize: 11,
         color: active ? 'var(--color-accent)' : 'var(--color-fg-muted)',
